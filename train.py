@@ -17,19 +17,19 @@ import numpy as np
 import random
 
 
-def model_train(model, epochs, dataset, train_step, lr_inner=0.01, lr_outer=0.002, update_times=2):
+def model_train(model, epochs, dataset, train_step, lr_inner=0.001, lr_outer=0.002, update_times=1):
     """
     根据论文上Algorithm 1上的流程进行模型的训练
-    :param model:
-    :param epochs:
-    :param train_step:
-    :param dataset:
-    :param lr_inner:
-    :param lr_outer:
+    :param model: MAML的模型
+    :param epochs: 迭代轮次
+    :param train_step: 训练的步数
+    :param dataset: 数据集
+    :param lr_inner: 内层任务的学习率
+    :param lr_outer: 外层任务的学习率
     :param update_times:
     :return:
     """
-    optimizer = optimizers.Adam(lr_outer)
+    optimizer = optimizers.SGD(lr_outer)
     maml_loss = metrics.Mean(name='maml_loss')
 
     # Step 2：一个大循环

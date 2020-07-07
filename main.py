@@ -22,10 +22,11 @@ def main():
     train_step = len(train_image) // BATCH_SIZE
 
     maml_model = MAMLmodel(num_classes=64)
-    model_train(maml_model, 1, train_dataset, train_step=train_step)
+    model_train(maml_model, 1, train_dataset, train_step=train_step, lr_outer=meta_lr, lr_inner=update_lr)
 
 
 if __name__ == '__main__':
     BATCH_SIZE = 4
-
+    update_lr = 1e-8
+    meta_lr = 1e-9
     main()
