@@ -16,3 +16,5 @@ num_querry = 1
 
 num_classes = 5
 update_times = 2
+
+save_path = "./logs/model/maml.h5"
