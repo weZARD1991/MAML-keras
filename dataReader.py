@@ -8,17 +8,9 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.backend as keras_backend
-
-
-# Other dependencies
-import random
-
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-
-# Reproduction
-np.random.seed(333)
+import random
+import numpy as np
 
 
 def read_csv(csv_path):
@@ -28,125 +20,119 @@ def read_csv(csv_path):
     :return:
     """
     csv = pd.read_csv(csv_path)
+    image_label = []
 
     image_list = list("./data/images/" + csv.iloc[:, 0])
 
     label_list = pd.factorize(csv.iloc[:, 1])
     label_list = label_list[0].tolist()
 
-    return image_list, label_list
+    # for img, label in zip(image_list, label_list):
+    #     image_label.append([img, label])
+
+    # write_to_txt("task.txt", image_label)
+
+    return image_list
 
 
-def process(img_path, label, class_num=64):
-
+def write_to_txt(file_name: str, contents):
     """
-    对数据集批量处理的函数，传给map，给图片加一个左右翻转的操作，
-    然后还要按照标准归一化操作-0.5再缩放
-    :param img_path: 必须有的参数，图片路径
-    :param label: 必须有的参数，图片标签（都是和dataset的格式对应）
-    :param class_num: 类别数量
-    :return: 单个图片和分类
+    将数据写入到txt
+    :param file_name: 文件名
+    :param contents: 内容
+    :return: None
     """
-    label = tf.one_hot(label, depth=class_num)
-
-    image = tf.io.read_file(img_path)
-    image = tf.image.decode_jpeg(image)
-    # 将unit8转为float32
-    image = tf.dtypes.cast(image, tf.float32)
-    image = tf.image.resize(image, [224, 224])
-
-    # image = tf.image.random_flip_left_right(image)
-
-    return image, label
+    with open(file_name, encoding="utf-8", mode='w') as f:
+        for c in contents:
+            f.writelines(c)
+            f.writelines('\n')
 
 
-def make_datasets(image, label, batch_size, mode="train"):
-    dataset = tf.data.Dataset.from_tensor_slices((image, label))
-    if mode == "train":
-        dataset = dataset.shuffle(buffer_size=len(label))
+def task_split(image_label: list, support=9, query=1, step=600, num_classes=5):
+    """
+    将各个任务下的图片-标签，按任务分类。这个API是基于Mini-ImageNet下实现的，其中每个类只有600个
+    故可以等间距选取，所以最终可以按照整数完整分配。
+    :param image_label: {image: label}的字典
+    :param support: support-set的数量
+    :param query: query-set的数量
+    :param step: 每个类中样本的数量
+    :param num_classes: 一个任务分由几个类组成
+    :return:
+    """
+    unit = support + query
+    unit_num = step // unit     # unit下，一个类可以分成几个一组
+    all_class = len(image_label) // step    # 总共有几类
 
-    dataset = dataset.map(process, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    dataset = dataset.repeat()
-    dataset = dataset.batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+    classes = [[] for _ in range(all_class)]
+    dataset = []
+
+    # 先将数据分成20种分类，每个分类里面以10个为一组（600张图就是60组），classes的shape => (20, 60)
+    for i in range(all_class):
+        for j in range(0, step, unit):
+            start = i * step + j
+            end = start + unit
+
+            classes[i].append(image_label[start: end])
+
+    # 循环60次，每次生成0-20的随机数，使得每个二级列表里的都长度都一致
+    for _ in range(unit_num):
+        choose = [i for i in range(len(classes))]
+        random.shuffle(choose)
+
+        # 循环20次，间距是5，每次取5个类，取出里面一组图片，作为一个任务
+        for i in range(0, len(classes), num_classes):
+            one_class = []
+
+            # 循环五次，且是第一层循环里，5个随机数作为classes (20, 60)里的20的索引，60不需要索引，直接pop
+            z = 0
+            for j in choose[i: i+num_classes]:
+                # 我们并不关心任务内的分类是对应所有分类的哪一个，所以并不需要原来的分类信息，只需要在任务内部再分类就好了
+                new = ["{} {}".format(line, z) for line in classes[j].pop()]
+                z += 1
+                one_class += new
+            dataset.append(one_class)
 
     return dataset
 
 
-class SinusoidGenerator:
+def process_one_task(one_task, num_classes=5):
     """
-    正弦信号发生器。
-    p(T)是连续的，其中振幅变化范围在[0.1,5.0]内，相位变化范围在[0,kw]内。
-    """
-    def __init__(self, batch_size=10, amplitude=None, phase=None):
-        """
-
-        :param batch_size:
-        :param amplitude: 振幅，如果为None，就随机从[0.1, 5.0]之间均匀采样
-        :param phase:
-        """
-        self.batch_size = batch_size
-        self.amplitude = amplitude if amplitude else np.random.uniform(0.1, 5.0)
-        self.phase = phase if phase else np.random.uniform(0, np.pi)
-        self.sampled_points = None
-        self.x = self._sample_x()
-
-    def _sample_x(self):
-        return np.random.uniform(-5, 5, self.batch_size)
-
-    def f(self, x):
-        """
-        正弦波
-        :param x: w
-        :return: sinewave
-        """
-        return self.amplitude * np.sin(x - self.phase)
-
-    def batch(self, x=None, force_new=False):
-        """
-        返回一个大小为K的批处理。它还更改了x的shape，为其添加了批处理尺寸
-        :param x:如果给定y，则基于此数据生成批处理数据。默认为无。如果没有，则使用`self.x`
-        :param force_new: 如果x为None,可以选择是否采用随机均匀采样
-        :return:
-        """
-        if x is None:
-            if force_new:
-                x = self._sample_x()
-            else:
-                x = self.x
-        y = self.f(x)
-        return x[:, None], y[:, None]
-
-    def equally_spaced_samples(self, batch_size=None):
-        """
-        返回batch_size个等距样本。
-        :param batch_size: 生成sinewave 序列的间距
-        :return:
-        """
-        if batch_size is None:
-            batch_size = self.batch_size
-        return self.batch(x=np.linspace(-5, 5, batch_size))
-
-
-def plot(data, *args, **kwargs):
-    x, y = data
-
-    return plt.plot(x, y, *args, **kwargs)
-
-
-def generate_dataset(batch_size, train_size=20000, test_size=10):
-    """
-    生成训练并测试数据集。数据集由能够一次提供一批（`K`）元素的SinusoidGenerator组成。
-    :param batch_size:
-    :param train_size: 训练集的个数
-    :param test_size: 测试集的个数
+    对一个任务处理，对其中每一个图片进行读取
+    :param one_task: 一个任务[img_path, label]
+    :param num_classes: 一个任务中 分类的数量
     :return:
     """
+    task = []
+    for lines in one_task:
+        img_path, label = lines.split()
+        label = tf.one_hot(int(label), depth=num_classes)
 
-    def _generate_dataset(size):
-        return [SinusoidGenerator(batch_size=batch_size) for _ in range(size)]
+        image = tf.io.read_file(img_path)
+        image = tf.image.decode_jpeg(image)
+        # 将unit8转为float32且归一化
+        image = tf.image.convert_image_dtype(image, tf.float32)
+        image = tf.image.resize(image, [224, 224])
+        image = tf.expand_dims(image, axis=0)
 
-    return _generate_dataset(train_size), _generate_dataset(test_size)
+        task.append([image, label])
+
+    return task
 
 
+def data_generator(all_task, num_classes=5):
+    """
+    数据生成器，利用生成器生成数据
+    :param all_task: 存有全部任务的列表
+    :param num_classes: 分类的数量
+    :return:
+    """
+    n = len(all_task)
+    i = 0
+    while True:
+        one_task = process_one_task(all_task[i], num_classes=num_classes)
 
+        random.shuffle(one_task)
+        i = (i + 1) % n
+
+        yield one_task
 
