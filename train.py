@@ -108,3 +108,38 @@ def maml_train(model,
     return model
 
 
+def maml_eval(model,
+              dataset,
+              batch_size,
+              n_way=5,
+              k_shot=1,
+              q_query=1,
+              lr_inner=0.001,
+              inner_train_step=3):
+
+    inner_optimizer = optimizers.Adam(lr_inner)
+
+    for batch_id, batch_task in enumerate(get_meta_batch(dataset, batch_size)):
+        for one_task in batch_task:
+            support_set = one_task[:n_way * k_shot]
+            query_set = one_task[n_way * k_shot:]
+
+            train_label = create_label(n_way, k_shot)
+            # 测试的时候，正常梯度下降
+            for inner_step in range(inner_train_step):
+                with tf.GradientTape() as support_tape:
+                    y_pred = model.forward(support_set)
+                    support_loss = compute_loss(train_label, y_pred)
+
+                gradients = support_tape.gradient(support_loss, model.trainable_variables)
+                inner_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+            # Step 6：评估一下模型
+            valid_label = create_label(n_way, q_query)
+            y_pred = model.forward(query_set)
+
+            equal_list = tf.equal(tf.argmax(y_pred, -1), tf.cast(valid_label, tf.int64))
+            acc = tf.reduce_mean(tf.cast(equal_list, tf.float32))
+            task_acc.append(acc)
+
+        print("Batch {} -- Testing accuracy: {}".format(batch_id, np.mean(task_acc)))
