@@ -5,16 +5,17 @@
 # @Software: PyCharm
 # @Brief: 实现模型分类的网络，MAML与网络结构无关，重点在训练过程
 
-from tensorflow.keras import layers, activations, losses, Model, optimizers
+from tensorflow.keras import layers, activations, losses, Model, optimizers, models
 from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
+import config as cfg
 
 
 class MAMLmodel(Model):
     def __init__(self, num_classes):
-        super().__init__()
+        super(MAMLmodel, self).__init__()
         self.Conv2D_1 = layers.Conv2D(filters=16, kernel_size=3, padding="same", activation="relu",
                                          input_shape=[224, 224, 3])
         self.Conv2D_2 = layers.Conv2D(filters=16, kernel_size=3, padding="same", activation="relu")
@@ -68,19 +69,20 @@ def compute_loss(y_true, y_pred):
     :param y_pred:
     :return:
     """
+    # mse = losses.sparse_categorical_crossentropy(y_true, y_pred)
     mse = K.mean(losses.mean_squared_error(y_true, y_pred))
 
     return mse
 
 
-def copy_model(model, targe_model, x):
+def copy_model(model, x):
     """
-    将权值拷贝出来到新的模型桑
+    将权值拷贝出来到新的模型上
     :param model: 要被拷贝的模型
     :param x: 输入的task,这用于运行前向传递，以将图形的权重添加为变量。
     :return: 接受了新权值的模型
     """
-    copied_model = targe_model
+    copied_model = MAMLmodel(cfg.num_classes)
 
     # 如果我们不执行此步骤，则权重不会“初始化”，并且不会计算梯度。
     copied_model.forward(x)

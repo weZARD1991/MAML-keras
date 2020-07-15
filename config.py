@@ -11,8 +11,9 @@ epochs = 5
 update_lr = 1e-8
 meta_lr = 1e-9
 
-num_support = 9
-num_querry = 1
+n_way = 5
+k_shot = 1
+q_query = 1
 
 num_classes = 5
 update_times = 2

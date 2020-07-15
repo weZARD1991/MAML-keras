@@ -5,9 +5,9 @@
 # @Software: PyCharm
 # @Brief: 程序启动脚本
 
-from dataReader import read_csv, task_split, data_generator
+from dataReader import read_csv, task_split
 from net import MAMLmodel
-from train import model_train
+from train import maml_train
 import tensorflow as tf
 import config as cfg
 
@@ -18,20 +18,20 @@ def main():
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
 
-    image_list = read_csv("./data/labels/train.csv")
-    task = task_split(image_list, support=cfg.num_support, query=cfg.num_querry, num_classes=cfg.num_classes)
-    train_generator = data_generator(task, num_classes=cfg.num_classes)
-
-    train_step = len(image_list) // ((cfg.num_support + cfg.num_querry) * cfg.num_classes)
+    image_list = read_csv("./data/labels/test.csv")
+    image_dataset = task_split(image_list)
 
     maml_model = MAMLmodel(num_classes=cfg.num_classes)
-    maml_model = model_train(maml_model,
+    maml_model = maml_train(maml_model,
                              cfg.epochs,
-                             train_generator,
-                             train_step=train_step,
+                             image_dataset,
+                             n_way=cfg.n_way,
+                             k_shot=cfg.k_shot,
+                             q_query=cfg.q_query,
                              lr_outer=cfg.meta_lr,
                              lr_inner=cfg.update_lr,
-                             num_classes=cfg.num_classes)
+                             num_classes=cfg.num_classes,
+                             batch_size=cfg.batch_size)
 
     maml_model.save_weight(cfg.save_path)
 
