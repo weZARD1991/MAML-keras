@@ -39,9 +39,9 @@ def maml_train(model,
     read_time = 0
     # Step 2：一个大循环
     for epoch in range(1, epochs + 1):
-        i = 0
+        step = 0
 
-        for step, batch_task in enumerate(get_meta_batch(dataset, batch_size)):
+        for batch_id, batch_task in enumerate(get_meta_batch(dataset, batch_size)):
             # Step 3-4：采样一个batch的小样本任务，遍历生成的数据
             # 先生成一个batch的数据
             task_loss = []
@@ -95,12 +95,12 @@ def maml_train(model,
             outer_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
             # 输出训练过程
-            rate = round((i + 1) / train_step, 5)
+            rate = (step + 1) / train_step
             a = "*" * int(rate * 30)
             b = "." * int((1 - rate) * 30)
             print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f} accuracy:{:.4f}"
-                  .format(step+1, train_step, int(rate * 100), a, b, meta_batch_loss, np.mean(task_acc)), end="")
-            i += 1
+                  .format(batch_id, train_step, int(rate * 100), a, b, meta_batch_loss, np.mean(task_acc)), end="")
+            step += 1
         print()
 
     print("{} times save model using {}s, read_model using {}s.".format(train_step, write_time, read_time))
@@ -120,6 +120,7 @@ def maml_eval(model,
     inner_optimizer = optimizers.Adam(lr_inner)
 
     for batch_id, batch_task in enumerate(get_meta_batch(dataset, batch_size)):
+        task_acc = []
         for one_task in batch_task:
             support_set = one_task[:n_way * k_shot]
             query_set = one_task[n_way * k_shot:]

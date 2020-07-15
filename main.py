@@ -34,7 +34,7 @@ def main():
                              lr_inner=cfg.update_lr,
                              batch_size=cfg.batch_size)
 
-    model_eval(maml_model, test_dataset, batch_size=cfg.batch_size)
+    maml_eval(maml_model, test_dataset, batch_size=cfg.batch_size)
     # maml_model.save_weights(cfg.save_path)
 
 

@@ -104,7 +104,7 @@ def task_split(image_label: list, q_query=1, one_class_img=600, n_way=5, k_shot=
         # 循环20次，间距是5，每次取5个类，取出里面一组图片，作为一个任务
         for i in range(0, len(classes), n_way):
             one_class = []
-
+            print(len(classes[i]))
             # 循环五次，且是第一层循环里，5个随机数作为classes (20, 60)里的20的索引，60不需要索引，直接pop
             # TODO: delete label information
             z = 0
@@ -189,5 +189,8 @@ def create_label(n_way, k_shot):
 
 
 if __name__ == '__main__':
-    image_list = read_csv("./data/labels/test.csv")
-    image_label = task_split(image_list)
+    image_list = read_csv("./data/labels/train.csv")
+    dataset = task_split(image_list)
+
+    # for step, batch_task in enumerate(get_meta_batch(dataset, 4)):
+    #     print(batch_task.shape)
