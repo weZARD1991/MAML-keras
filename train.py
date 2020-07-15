@@ -98,8 +98,8 @@ def maml_train(model,
             rate = round((i + 1) / train_step, 5)
             a = "*" * int(rate * 30)
             b = "." * int((1 - rate) * 30)
-            print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f}"
-                  .format(step+1, train_step, int(rate * 100), a, b, meta_batch_loss), end="")
+            print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f} accuracy:{:.4f}"
+                  .format(step+1, train_step, int(rate * 100), a, b, meta_batch_loss, np.mean(task_acc)), end="")
             i += 1
         print()
 
