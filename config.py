@@ -8,14 +8,13 @@
 batch_size = 4
 epochs = 5
 
-update_lr = 1e-4
-meta_lr = 1e-4
+inner_lr = 0.4
+outer_lr = 1e-3
 
 n_way = 5
 k_shot = 1
 q_query = 1
 
-num_classes = 5
 update_times = 2
 
 save_path = "./logs/model/maml.h5"

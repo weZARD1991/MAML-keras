@@ -107,7 +107,6 @@ def task_split(image_label: list, q_query=1, one_class_img=600, n_way=5, k_shot=
 
             # 循环五次，且是第一层循环里，5个随机数作为classes (20, 60)里的20的索引，60不需要索引，直接pop
             # TODO: delete label information
-            print(len(classes[i]))
             z = 0
             for j in choose[i: i+n_way]:
                 # 我们并不关心任务内的分类是对应所有分类的哪一个，所以并不需要原来的分类信息，只需要在任务内部再分类就好了

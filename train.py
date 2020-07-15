@@ -35,8 +35,6 @@ def maml_train(model,
     inner_optimizer = optimizers.Adam(lr_inner)
     train_step = len(dataset) // batch_size
 
-    write_time = 0
-    read_time = 0
     # Step 2：一个大循环
     for epoch in range(1, epochs + 1):
         step = 0
@@ -54,14 +52,8 @@ def maml_train(model,
 
                     # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值）
                     model.forward(support_set)
-                    # support_model（实质上是copy一份新的weights），是为了保证和上一次maml更新的模型方向一致
-                    # 为了不破坏model的原来的weights，所以其实只有weights不一样
-                    # support_model = copy_model(model, support_set)
-                    t0 = time.time()
-                    # model.save_weights("meta.h5")
+                    # 读取出一份权重，再inner loop结束后再恢复回去.
                     meta_weights = model.get_weights()
-                    t1 = time.time()
-                    write_time += t1 - t0
 
                     train_label = create_label(n_way, k_shot)
                     # Step 7：对support set进行梯度下降，求得meta-update的方向
@@ -85,12 +77,8 @@ def maml_train(model,
 
                 # Step 10：更新θ的权值，这里算的Loss是batch的loss平均
                 meta_batch_loss = tf.reduce_mean(tf.stack(task_loss))
-                t2 = time.time()
-                # model.load_weights("meta.h5")
-                model.set_weights(meta_weights)
-                t3 = time.time()
-                read_time += t3 - t2
 
+            model.set_weights(meta_weights)
             gradients = query_tape.gradient(meta_batch_loss, model.trainable_variables)
             outer_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
@@ -102,8 +90,6 @@ def maml_train(model,
                   .format(batch_id, train_step, int(rate * 100), a, b, meta_batch_loss, np.mean(task_acc)), end="")
             step += 1
         print()
-
-    print("{} times save model using {}s, read_model using {}s.".format(train_step, write_time, read_time))
 
     return model
 
