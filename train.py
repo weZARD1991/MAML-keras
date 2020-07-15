@@ -58,7 +58,8 @@ def maml_train(model,
                     # 为了不破坏model的原来的weights，所以其实只有weights不一样
                     # support_model = copy_model(model, support_set)
                     t0 = time.time()
-                    model.save_weights("meta.h5")
+                    # model.save_weights("meta.h5")
+                    meta_weights = model.get_weights()
                     t1 = time.time()
                     write_time += t1 - t0
 
@@ -85,7 +86,8 @@ def maml_train(model,
                 # Step 10：更新θ的权值，这里算的Loss是batch的loss平均
                 meta_batch_loss = tf.reduce_mean(tf.stack(task_loss))
                 t2 = time.time()
-                model.load_weights("meta.h5")
+                # model.load_weights("meta.h5")
+                model.set_weights(meta_weights)
                 t3 = time.time()
                 read_time += t3 - t2
 
@@ -93,11 +95,11 @@ def maml_train(model,
             outer_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
             # 输出训练过程
-            rate = (i + 1) / train_step
+            rate = round((i + 1) / train_step, 5)
             a = "*" * int(rate * 30)
             b = "." * int((1 - rate) * 30)
             print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f}"
-                  .format(step, train_step, int(rate * 100), a, b, meta_batch_loss), end="")
+                  .format(step+1, train_step, int(rate * 100), a, b, meta_batch_loss), end="")
             i += 1
         print()
 
