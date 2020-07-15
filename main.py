@@ -30,10 +30,9 @@ def main():
                              q_query=cfg.q_query,
                              lr_outer=cfg.meta_lr,
                              lr_inner=cfg.update_lr,
-                             num_classes=cfg.num_classes,
                              batch_size=cfg.batch_size)
 
-    maml_model.save_weight(cfg.save_path)
+    # maml_model.save_weights(cfg.save_path)
 
 
 if __name__ == '__main__':

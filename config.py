@@ -8,8 +8,8 @@
 batch_size = 4
 epochs = 5
 
-update_lr = 1e-8
-meta_lr = 1e-9
+update_lr = 1e-4
+meta_lr = 1e-4
 
 n_way = 5
 k_shot = 1
