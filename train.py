@@ -143,4 +143,4 @@ def maml_eval(model,
             acc = tf.reduce_mean(tf.cast(equal_list, tf.float32))
             task_acc.append(acc)
 
-        print("Batch {} -- Testing accuracy: {}".format(batch_id, np.mean(task_acc)))
+        print("Batch {} -- Testing accuracy: {:.4f}".format(batch_id, np.mean(task_acc)))
