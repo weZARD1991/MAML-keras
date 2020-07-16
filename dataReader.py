@@ -127,33 +127,22 @@ def get_meta_batch(dataset, meta_batch_size):
     :param meta_batch_size: batch_size个任务组成一个meta_batch
     :return: 生成一个batch的任务
     """
+    j = 0
     while len(dataset) > 0:
         batch_task = []
+        j %= len(dataset)
         for i in range(meta_batch_size):
             try:
-                data = process_one_task(dataset.pop(0))
+                data = process_one_task(dataset[j])
                 data = tf.squeeze(data, axis=1)
                 batch_task.append(data)
 
             except IndexError:
                 return
+            j += 1
 
         # 将他们组合到新的任务里
         yield tf.stack(batch_task)
-
-
-def get_batch_task(dataset, meta_batch_size):
-    """
-    从生成器中获取一个batch的任务
-    :param dataset:
-    :param meta_batch_size:
-    :return:
-    """
-    try:
-        one_task = next(batch_task_generate(dataset, meta_batch_size))
-    except StopIteration:
-        one_task = []
-    return one_task
 
 
 def process_one_task(one_task):
@@ -189,8 +178,8 @@ def create_label(n_way, k_shot):
 
 
 if __name__ == '__main__':
-    image_list = read_csv("./data/labels/train.csv")
+    image_list = read_csv("./data/labels/test.csv")
     dataset = task_split(image_list)
 
-    # for step, batch_task in enumerate(get_meta_batch(dataset, 4)):
-    #     print(batch_task.shape)
+    for step, batch_task in enumerate(get_meta_batch(dataset, 12)):
+        print(step)
