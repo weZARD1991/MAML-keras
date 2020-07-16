@@ -14,7 +14,8 @@ import time
 
 def maml_train(model,
                epochs,
-               dataset,
+               train_dataset,
+               valid_dataset,
                n_way=5,
                k_shot=1,
                q_query=1,
@@ -26,9 +27,12 @@ def maml_train(model,
     # Step 2：一个大循环
     for epoch in range(1, epochs + 1):
         step = 0
-        train_step = len(dataset) // batch_size
+        train_step = len(train_dataset) // batch_size
+        valid_step = len(valid_dataset) // batch_size
 
-        for batch_id, batch_task in enumerate(get_meta_batch(dataset, batch_size)):
+        # train
+        for batch_id in range(train_step):
+            batch_task = next(get_meta_batch(train_dataset, batch_size))
             loss, acc = maml_train_on_batch(model,
                                             batch_task,
                                             n_way=n_way,
@@ -45,8 +49,23 @@ def maml_train(model,
             print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f} accuracy:{:.4f}"
                   .format(batch_id, train_step, int(rate * 100), a, b, loss, acc), end="")
             step += 1
-        print()
 
+        # valid
+        for batch_id in range(valid_step):
+            batch_task = next(get_meta_batch(valid_dataset, batch_size))
+            loss, acc = maml_train_on_batch(model,
+                                            batch_task,
+                                            n_way=n_way,
+                                            k_shot=k_shot,
+                                            q_query=q_query,
+                                            lr_inner=lr_inner,
+                                            lr_outer=lr_outer,
+                                            inner_train_step=inner_train_step)
+
+            # 输出训练过程
+            print("\r loss:{:.4f} accuracy:{:.4f}".format(loss, acc), end="")
+
+        print()
     return model
 
 
