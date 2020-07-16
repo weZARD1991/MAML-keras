@@ -49,7 +49,7 @@ def maml_train(model,
             print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f} accuracy:{:.4f}"
                   .format(batch_id, train_step, int(rate * 100), a, b, loss, acc), end="")
             step += 1
-
+        print()
         # valid
         for batch_id in range(valid_step):
             batch_task = next(get_meta_batch(valid_dataset, batch_size))
@@ -63,7 +63,7 @@ def maml_train(model,
                                             inner_train_step=inner_train_step)
 
             # 输出训练过程
-            print("\r loss:{:.4f} accuracy:{:.4f}".format(loss, acc), end="")
+            print(" loss:{:.4f} accuracy:{:.4f}".format(loss, acc), end="")
 
         print()
     return model
