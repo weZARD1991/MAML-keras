@@ -5,7 +5,7 @@
 # @Software: PyCharm
 # @Brief: 配置文件
 
-batch_size = 4
+batch_size = 12
 epochs = 5
 
 inner_lr = 1e-6
