@@ -63,13 +63,51 @@ def maml_train(model,
                                             q_query=q_query,
                                             lr_inner=lr_inner,
                                             lr_outer=lr_outer,
-                                            inner_train_step=inner_train_step)
+                                            inner_train_step=inner_train_step,
+                                            is_train=False)
             val_loss.append(loss)
             val_acc.append(acc)
         # 输出训练过程
         print("val_loss:{:.4f} val_accuracy:{:.4f}".format(np.mean(val_loss), np.mean(val_acc)), end="")
 
         print()
+    return model
+
+
+def maml_eval(model,
+              test_dataset,
+              n_way=5,
+              k_shot=1,
+              q_query=1,
+              lr_inner=0.001,
+              lr_outer=0.002,
+              batch_size=2,
+              inner_train_step=3):
+
+    # Step 2：一个大循环
+
+    test_step = len(test_dataset) // batch_size
+
+    test_acc = []
+    test_loss = []
+    # valid
+    for batch_id in range(test_step):
+        batch_task = next(get_meta_batch(test_dataset, batch_size))
+        loss, acc = maml_train_on_batch(model,
+                                        batch_task,
+                                        n_way=n_way,
+                                        k_shot=k_shot,
+                                        q_query=q_query,
+                                        lr_inner=lr_inner,
+                                        lr_outer=lr_outer,
+                                        inner_train_step=inner_train_step,
+                                        is_train=False)
+        test_acc.append(loss)
+        test_loss.append(acc)
+
+        # 输出训练过程
+        print("test_loss:{:.4f} test_accuracy:{:.4f}".format(np.mean(test_acc), np.mean(test_loss)), end="")
+
     return model
 
 
@@ -138,39 +176,3 @@ def maml_train_on_batch(model,
     return meta_batch_loss, np.mean(task_acc)
 
 
-def maml_eval(model,
-              dataset,
-              batch_size,
-              n_way=5,
-              k_shot=1,
-              q_query=1,
-              lr_inner=0.001,
-              inner_train_step=3):
-
-    inner_optimizer = optimizers.Adam(lr_inner)
-
-    for batch_id, batch_task in enumerate(get_meta_batch(dataset, batch_size)):
-        task_acc = []
-        for one_task in batch_task:
-            support_set = one_task[:n_way * k_shot]
-            query_set = one_task[n_way * k_shot:]
-
-            train_label = create_label(n_way, k_shot)
-            # 测试的时候，正常梯度下降
-            for inner_step in range(inner_train_step):
-                with tf.GradientTape() as support_tape:
-                    y_pred = model.forward(support_set)
-                    support_loss = compute_loss(train_label, y_pred)
-
-                gradients = support_tape.gradient(support_loss, model.trainable_variables)
-                inner_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-            # Step 6：评估一下模型
-            valid_label = create_label(n_way, q_query)
-            y_pred = model.forward(query_set)
-
-            equal_list = tf.equal(tf.argmax(y_pred, -1), tf.cast(valid_label, tf.int64))
-            acc = tf.reduce_mean(tf.cast(equal_list, tf.float32))
-            task_acc.append(acc)
-
-        print("Batch {} -- Testing accuracy: {:.4f}".format(batch_id, np.mean(task_acc)))
