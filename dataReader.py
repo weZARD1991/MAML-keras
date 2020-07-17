@@ -149,6 +149,7 @@ def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
 
         dataset.append(one_task)
 
+    return dataset
 
 if __name__ == '__main__':
     image_classes = read_csv("./data/labels/train.csv")
