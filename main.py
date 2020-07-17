@@ -27,19 +27,19 @@ def main():
     test_dataset = task_split(test_list)
 
     maml_model = MAMLmodel(num_classes=cfg.n_way)
-    maml_model = maml_train(maml_model,
-                            cfg.epochs,
-                            train_dataset,
-                            valid_dataset,
-                            n_way=cfg.n_way,
-                            k_shot=cfg.k_shot,
-                            q_query=cfg.q_query,
-                            lr_outer=cfg.inner_lr,
-                            lr_inner=cfg.outer_lr,
-                            batch_size=cfg.batch_size)
+    maml_train(maml_model,
+               cfg.epochs,
+               train_dataset,
+               valid_dataset,
+               n_way=cfg.n_way,
+               k_shot=cfg.k_shot,
+               q_query=cfg.q_query,
+               lr_outer=cfg.inner_lr,
+               lr_inner=cfg.outer_lr,
+               batch_size=cfg.batch_size)
 
-    maml_eval(maml_model, test_dataset, batch_size=cfg.batch_size)
-    # maml_model.save_weights(cfg.save_path)
+    maml_eval(maml_model, test_dataset, lr_outer=cfg.inner_lr, lr_inner=cfg.outer_lr, batch_size=cfg.batch_size)
+    maml_model.save_weights(cfg.save_path)
 
 
 if __name__ == '__main__':

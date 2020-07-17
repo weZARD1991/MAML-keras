@@ -17,7 +17,7 @@ import random
 import numpy as np
 
 
-def read_csv(csv_path):
+def read_csv(csv_path, one_class_img=600):
     """
     读取包含图片名和标签的csv
     :param csv_path:
@@ -28,96 +28,22 @@ def read_csv(csv_path):
 
     image_list = list("./data/images/" + csv.iloc[:, 0])
 
-    label_list = pd.factorize(csv.iloc[:, 1])
-    label_list = label_list[0].tolist()
+    num_class = len(image_list) // one_class_img    # 总共有几类
+    classes = [[] for _ in range(num_class)]
+
+    # label_list = pd.factorize(csv.iloc[:, 1])
+    # label_list = label_list[0].tolist()
 
     # for img, label in zip(image_list, label_list):
     #     image_label.append([img, label])
 
-    # write_to_txt("task.txt", image_label)
+    # 先按照类区分开
+    for i in range(num_class):
+        start = i * one_class_img
+        end = (i+1) * one_class_img
+        classes[i] = image_list[start: end]
 
-    return image_list
-
-
-def write_to_txt(file_name: str, contents):
-    """
-    将数据写入到txt
-    :param file_name: 文件名
-    :param contents: 内容
-    :return: None
-    """
-    with open(file_name, encoding="utf-8", mode='w') as f:
-        for c in contents:
-            f.writelines(c)
-            f.writelines('\n')
-
-
-def task_split(image_label: list, q_query=1, one_class_img=600, n_way=5, k_shot=1):
-    """
-    将各个任务下的图片-标签，按任务分类。这个API是基于Mini-ImageNet下实现的，其中每个类只有600个
-    故可以等间距选取，所以最终可以按照整数完整分配。n-way * k-shot张图片用来给inner loop训练，query是决定多少给out loop去test
-    dataset最终是 , shape = [batch_size, n_way * (k_shot + q_query), 1, 28, 28]
-    :param image_label: {image: label}的字典
-    :param q_query: query-set的数量，也就是在testing(out loop，为什么要叫test?)时，每个类别会有多少张照片，
-    :param one_class_img: 每个类中样本的总共数量
-    :param n_way: 一个任务由几个类组成
-    :param k_shot: 每个类中有几张图片
-    :return:
-    """
-    def split_train_and_test(one_task):
-        """
-        将one_class_list中按照k_shot和q_query的占比分成train和test
-        :param one_task: 一个完整的任务
-        :return:
-        """
-        train = []
-        test = []
-        for i in range(0, len(one_task), (k_shot + q_query)):
-            train += one_task[i: i + k_shot]
-
-        for i in range(0, len(one_task), (k_shot + q_query)):
-            test += one_task[i: i + q_query]
-
-        one_task = train + test
-        return one_task
-
-    unit = k_shot + q_query
-    unit_num = one_class_img // unit     # unit下，一个类可以分成几个一组
-    all_class = len(image_label) // one_class_img    # 总共有几类
-
-    classes = [[] for _ in range(all_class)]
-    dataset = []
-
-    # 先将数据分成20种分类，每个分类里面以10个为一组（600张图就是60组），classes的shape => (20, 60)
-    for i in range(all_class):
-        for j in range(0, one_class_img, unit):
-            start = i * one_class_img + j
-            end = start + unit
-
-            classes[i].append(image_label[start: end])
-
-    # 循环60次，每次生成0-20的随机数，使得每个二级列表里在pop操作之后，长度都一致，就不会出现某一个类被取完了，其他类还没取完
-    for _ in range(unit_num):
-        choose = [i for i in range(len(classes))]
-        random.shuffle(choose)
-
-        # 循环20次，间距是5，每次取5个类，取出里面一组图片，作为一个任务
-        for i in range(0, len(classes), n_way):
-            one_class = []
-
-            # 循环五次，且是第一层循环里，5个随机数作为classes (20, 60)里的20的索引，60不需要索引，直接pop
-            # TODO: delete label information
-            z = 0
-            for j in choose[i: i+n_way]:
-                # 我们并不关心任务内的分类是对应所有分类的哪一个，所以并不需要原来的分类信息，只需要在任务内部再分类就好了
-                new = ["{} {}".format(line, z) for line in classes[j].pop()]
-                z += 1
-                one_class += new
-
-            one_task = split_train_and_test(one_class)
-            dataset.append(one_task)
-
-    return dataset
+    return classes
 
 
 def get_meta_batch(dataset, meta_batch_size):
@@ -177,9 +103,54 @@ def create_label(n_way, k_shot):
     return tf.convert_to_tensor(np.repeat(range(n_way), k_shot), dtype=tf.float32)
 
 
-if __name__ == '__main__':
-    image_list = read_csv("./data/labels/test.csv")
-    dataset = task_split(image_list)
+def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
+    """
+    将各个分类下的img_path，按任务为单位分类。这个API是基于Mini-ImageNet下实现的，其中每个类只有600个
+    为了均匀利用到所有数据，(q_query + k_shot) * n_way 要能被 图片数量整除
+    。n-way * k-shot张图片用来给inner loop训练，n-way * query是给out loop去test
+    dataset最终是 , shape = [batch_size, n_way * (k_shot + q_query), 1, 28, 28]
+    :param classes: shape为(class_num, img_num)的二位列表，存储了图片的路径
+    :param q_query: query-set的数量
+    :param n_way: 一个任务由几个类组成
+    :param k_shot: support-set数量
+    :return:
+    """
+    dataset = []
+    # 这样计算循环次数的前提得是每个分类中图片数量相同，下面划分数据集的操作也是基于这个前提才能计算的
+    # 总的循环数 = 图片总数 // 一个任务所包含图片的数量
+    loop_num = len(classes) * len(classes[0]) // ((q_query + k_shot) * n_way)
 
-    for step, batch_task in enumerate(get_meta_batch(dataset, 12)):
-        print(step)
+    choose = [i for i in range(len(classes))]
+    random.shuffle(choose)
+
+    end = 0
+
+    for _ in range(loop_num):
+        # 用来存储一个任务的图片
+        one_task = []
+        # 索引有可能会大于列表长度，故需要截断处理，且每次的start都应该是上一个值的结束值
+        start = end
+        end = (start + n_way) % len(classes)
+
+        if end < start:
+            task_class = choose[start:] + choose[:end]
+        else:
+            task_class = choose[start: end]
+
+        # 循环n_way次，取出k_shot个训练图像
+        for i in task_class:
+            for _ in range(k_shot):
+                one_task.append(classes[i].pop(0))
+
+        # 取出q_query个训练图像
+        for i in task_class:
+            for _ in range(q_query):
+                one_task.append(classes[i].pop(0))
+
+        dataset.append(one_task)
+
+
+if __name__ == '__main__':
+    image_classes = read_csv("./data/labels/train.csv")
+    dataset = test(image_classes)
+

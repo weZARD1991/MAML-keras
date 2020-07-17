@@ -21,9 +21,21 @@ def maml_train(model,
                q_query=1,
                lr_inner=0.001,
                lr_outer=0.002,
-               batch_size=2,
-               inner_train_step=1):
-
+               batch_size=2):
+    """
+    maml的训练函数 - 训练、验证
+    :param model: 任意模型都可以
+    :param epochs: 迭代次数
+    :param train_dataset: 训练集
+    :param valid_dataset: 验证集
+    :param n_way: 一个任务内分类的数量
+    :param k_shot: support set
+    :param q_query: query set
+    :param lr_inner: 内层support set的学习率
+    :param lr_outer: 外层query set任务的学习率
+    :param batch_size:
+    :return: None
+    """
     # Step 2：一个大循环
     for epoch in range(1, epochs + 1):
         step = 0
@@ -40,10 +52,10 @@ def maml_train(model,
                                             q_query=q_query,
                                             lr_inner=lr_inner,
                                             lr_outer=lr_outer,
-                                            inner_train_step=inner_train_step)
+                                            inner_train_step=1)
 
             # 输出训练过程
-            rate = step / train_step
+            rate = (step+1) / train_step
             a = "*" * int(rate * 30)
             b = "." * int((1 - rate) * 30)
             print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f} accuracy:{:.4f}"
@@ -63,15 +75,12 @@ def maml_train(model,
                                             q_query=q_query,
                                             lr_inner=lr_inner,
                                             lr_outer=lr_outer,
-                                            inner_train_step=inner_train_step,
-                                            is_train=False)
+                                            inner_train_step=3,
+                                            meta_update=False)
             val_loss.append(loss)
             val_acc.append(acc)
         # 输出训练过程
-        print("val_loss:{:.4f} val_accuracy:{:.4f}".format(np.mean(val_loss), np.mean(val_acc)), end="")
-
-        print()
-    return model
+        print("val_loss:{:.4f} val_accuracy:{:.4f}".format(np.mean(val_loss), np.mean(val_acc)))
 
 
 def maml_eval(model,
@@ -81,16 +90,24 @@ def maml_eval(model,
               q_query=1,
               lr_inner=0.001,
               lr_outer=0.002,
-              batch_size=2,
-              inner_train_step=3):
-
-    # Step 2：一个大循环
-
+              batch_size=2):
+    """
+    maml的测试函数
+    :param model: 经过训练后的模型
+    :param test_dataset: 测试集
+    :param n_way: 一个任务内分类的数量
+    :param k_shot: support set
+    :param q_query: query set
+    :param lr_inner: 内层support set的学习率
+    :param lr_outer: 外层query set任务的学习率
+    :param batch_size:
+    :return: None
+    """
     test_step = len(test_dataset) // batch_size
 
     test_acc = []
     test_loss = []
-    # valid
+
     for batch_id in range(test_step):
         batch_task = next(get_meta_batch(test_dataset, batch_size))
         loss, acc = maml_train_on_batch(model,
@@ -100,15 +117,13 @@ def maml_eval(model,
                                         q_query=q_query,
                                         lr_inner=lr_inner,
                                         lr_outer=lr_outer,
-                                        inner_train_step=inner_train_step,
-                                        is_train=False)
+                                        inner_train_step=5,
+                                        meta_update=False)
         test_acc.append(loss)
         test_loss.append(acc)
 
-        # 输出训练过程
-        print("test_loss:{:.4f} test_accuracy:{:.4f}".format(np.mean(test_acc), np.mean(test_loss)), end="")
-
-    return model
+        # 输出测试结果
+        print("test_loss:{:.4f} test_accuracy:{:.4f}".format(np.mean(test_acc), np.mean(test_loss)))
 
 
 def maml_train_on_batch(model,
@@ -119,13 +134,19 @@ def maml_train_on_batch(model,
                         lr_inner=0.001,
                         lr_outer=0.002,
                         inner_train_step=1,
-                        is_train=True):
+                        meta_update=True):
     """
     根据论文上Algorithm 1上的流程进行模型的训练
     :param model: MAML的模型
-    :param lr_inner: 内层任务的学习率
-    :param lr_outer: 外层任务的学习率
-    :return:
+    :param batch_task: 一个batch 的任务
+    :param n_way: 一个任务内分类数量
+    :param k_shot: support set的数量
+    :param q_query: query的数量
+    :param lr_inner: 内层support set的学习率
+    :param lr_outer: 外层query set任务的学习率
+    :param inner_train_step: 内层support set的训练次数
+    :param meta_update: 是否进行meta update
+    :return: loss, accuracy -- 都是均值
     """
     outer_optimizer = optimizers.Adam(lr_outer)
     inner_optimizer = optimizers.Adam(lr_inner)
@@ -169,7 +190,7 @@ def maml_train_on_batch(model,
         meta_batch_loss = tf.reduce_mean(tf.stack(task_loss))
 
     model.set_weights(meta_weights)
-    if is_train:
+    if meta_update:
         gradients = query_tape.gradient(meta_batch_loss, model.trainable_variables)
         outer_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
