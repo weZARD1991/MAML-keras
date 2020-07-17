@@ -19,9 +19,15 @@ class MAMLmodel(Model):
         self.Conv2D_1 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu",
                                          input_shape=[224, 224, 3])
         self.Conv2D_2 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu")
+        self.MaxPooling1 = layers.MaxPool2D(pool_size=2)
 
-        self.Conv2D_3 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu")
-        self.Conv2D_4 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu")
+        self.Conv2D_3 = layers.Conv2D(filters=64, kernel_size=3, padding="same", activation="relu")
+        self.Conv2D_4 = layers.Conv2D(filters=64, kernel_size=3, padding="same", activation="relu")
+        self.MaxPooling2 = layers.MaxPool2D(pool_size=2)
+
+        self.Conv2D_5 = layers.Conv2D(filters=128, kernel_size=3, padding="same", activation="relu")
+        self.Conv2D_6 = layers.Conv2D(filters=128, kernel_size=3, padding="same", activation="relu")
+        self.MaxPooling2 = layers.MaxPool2D(pool_size=2)
 
         self.Flatten = layers.Flatten()
         self.Dense_1 = layers.Dense(128, activation='relu')
@@ -30,9 +36,15 @@ class MAMLmodel(Model):
     def forward(self, inputs):
         x = self.Conv2D_1(inputs)
         x = self.Conv2D_2(x)
+        x = self.MaxPooling1(x)
 
         x = self.Conv2D_3(x)
         x = self.Conv2D_4(x)
+        x = self.MaxPooling2(x)
+
+        x = self.Conv2D_5(x)
+        x = self.Conv2D_6(x)
+        x = self.MaxPooling3(x)
 
         x = self.Flatten(x)
         x = self.Dense_1(x)
