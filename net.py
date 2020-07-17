@@ -16,9 +16,9 @@ import config as cfg
 class MAMLmodel(Model):
     def __init__(self, num_classes):
         super(MAMLmodel, self).__init__()
-        self.Conv2D_1 = layers.Conv2D(filters=16, kernel_size=3, padding="same", activation="relu",
+        self.Conv2D_1 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu",
                                          input_shape=[224, 224, 3])
-        self.Conv2D_2 = layers.Conv2D(filters=16, kernel_size=3, padding="same", activation="relu")
+        self.Conv2D_2 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu")
         self.MaxPool_1 = layers.MaxPool2D(pool_size=2)
 
         self.Conv2D_3 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu")
@@ -36,15 +36,15 @@ class MAMLmodel(Model):
     def forward(self, inputs):
         x = self.Conv2D_1(inputs)
         x = self.Conv2D_2(x)
-        x = self.MaxPool_1(x)
+        # x = self.MaxPool_1(x)
 
         x = self.Conv2D_3(x)
         x = self.Conv2D_4(x)
-        x = self.MaxPool_2(x)
+        # x = self.MaxPool_2(x)
 
-        x = self.Conv2D_5(x)
-        x = self.Conv2D_6(x)
-        x = self.MaxPool_3(x)
+        # x = self.Conv2D_5(x)
+        # x = self.Conv2D_6(x)
+        # x = self.MaxPool_3(x)
 
         x = self.Flatten(x)
         x = self.Dense_1(x)

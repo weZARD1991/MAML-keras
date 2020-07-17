@@ -8,8 +8,8 @@
 batch_size = 12
 epochs = 5
 
-inner_lr = 1e-6
-outer_lr = 1e-8
+inner_lr = 1e-3
+outer_lr = 1e-5
 
 n_way = 5
 k_shot = 1
