@@ -18,8 +18,8 @@ def main():
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
 
-    train_list = read_csv("./data/labels/test.csv")
-    valid_list = read_csv("./data/labels/test.csv")
+    train_list = read_csv("./data/labels/train.csv")
+    valid_list = read_csv("./data/labels/valid.csv")
     test_list = read_csv("./data/labels/test.csv")
 
     train_dataset = task_split(train_list)
