@@ -24,18 +24,11 @@ def read_csv(csv_path, one_class_img=600):
     :return:
     """
     csv = pd.read_csv(csv_path)
-    image_label = []
 
     image_list = list("./data/images/" + csv.iloc[:, 0])
 
     num_class = len(image_list) // one_class_img    # 总共有几类
     classes = [[] for _ in range(num_class)]
-
-    # label_list = pd.factorize(csv.iloc[:, 1])
-    # label_list = label_list[0].tolist()
-
-    # for img, label in zip(image_list, label_list):
-    #     image_label.append([img, label])
 
     # 先按照类区分开
     for i in range(num_class):
@@ -79,8 +72,7 @@ def process_one_task(one_task):
     """
     task = []
 
-    for lines in one_task:
-        img_path, label = lines.split()
+    for img_path in one_task:
 
         image = tf.io.read_file(img_path)
         image = tf.image.decode_jpeg(image)
@@ -150,6 +142,7 @@ def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
         dataset.append(one_task)
 
     return dataset
+
 
 if __name__ == '__main__':
     image_classes = read_csv("./data/labels/train.csv")
