@@ -27,7 +27,7 @@ class MAMLmodel(Model):
 
         self.Conv2D_5 = layers.Conv2D(filters=128, kernel_size=3, padding="same", activation="relu")
         self.Conv2D_6 = layers.Conv2D(filters=128, kernel_size=3, padding="same", activation="relu")
-        self.MaxPooling2 = layers.MaxPool2D(pool_size=2)
+        self.MaxPooling3 = layers.MaxPool2D(pool_size=2)
 
         self.Flatten = layers.Flatten()
         self.Dense_1 = layers.Dense(128, activation='relu')
