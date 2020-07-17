@@ -5,82 +5,23 @@
 # @Software: PyCharm
 # @Brief: 有关于训练，梯度优化的函数
 
-from tensorflow.keras import optimizers, metrics
+from tensorflow.keras import optimizers, losses
 import tensorflow as tf
-from net import *
+from net import MAMLmodel
 from dataReader import get_meta_batch, create_label
-import time
+import numpy as np
 
 
-def maml_train(model,
-               epochs,
-               train_dataset,
-               valid_dataset,
-               n_way=5,
-               k_shot=1,
-               q_query=1,
-               lr_inner=0.001,
-               lr_outer=0.002,
-               batch_size=2):
+def compute_loss(y_true, y_pred):
     """
-    maml的训练函数 - 训练、验证
-    :param model: 任意模型都可以
-    :param epochs: 迭代次数
-    :param train_dataset: 训练集
-    :param valid_dataset: 验证集
-    :param n_way: 一个任务内分类的数量
-    :param k_shot: support set
-    :param q_query: query set
-    :param lr_inner: 内层support set的学习率
-    :param lr_outer: 外层query set任务的学习率
-    :param batch_size:
-    :return: None
+    计算loss
+    :param y_true: 模型
+    :param y_pred:
+    :return:
     """
-    # Step 2：一个大循环
-    for epoch in range(1, epochs + 1):
-        step = 0
-        train_step = len(train_dataset) // batch_size
-        valid_step = len(valid_dataset) // batch_size
+    mse = losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
-        # train
-        for batch_id in range(train_step):
-            batch_task = next(get_meta_batch(train_dataset, batch_size))
-            loss, acc = maml_train_on_batch(model,
-                                            batch_task,
-                                            n_way=n_way,
-                                            k_shot=k_shot,
-                                            q_query=q_query,
-                                            lr_inner=lr_inner,
-                                            lr_outer=lr_outer,
-                                            inner_train_step=1)
-
-            # 输出训练过程
-            rate = (step+1) / train_step
-            a = "*" * int(rate * 30)
-            b = "." * int((1 - rate) * 30)
-            print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f} accuracy:{:.4f}"
-                  .format(batch_id + 1, train_step, int(rate * 100), a, b, loss, acc), end="")
-            step += 1
-        print()
-
-        val_acc = []
-        val_loss = []
-        # valid
-        for batch_id in range(valid_step):
-            batch_task = next(get_meta_batch(valid_dataset, batch_size))
-            loss, acc = maml_train_on_batch(model,
-                                            batch_task,
-                                            n_way=n_way,
-                                            k_shot=k_shot,
-                                            q_query=q_query,
-                                            lr_inner=lr_inner,
-                                            lr_outer=lr_outer,
-                                            inner_train_step=3,
-                                            meta_update=False)
-            val_loss.append(loss)
-            val_acc.append(acc)
-        # 输出训练过程
-        print("val_loss:{:.4f} val_accuracy:{:.4f}".format(np.mean(val_loss), np.mean(val_acc)))
+    return mse
 
 
 def maml_eval(model,

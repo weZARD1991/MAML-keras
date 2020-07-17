@@ -5,7 +5,7 @@
 # @Software: PyCharm
 # @Brief: 实现模型分类的网络，MAML与网络结构无关，重点在训练过程
 
-from tensorflow.keras import layers, activations, losses, Model, optimizers, models
+from tensorflow.keras import layers, activations, Model, optimizers, models
 from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -52,42 +52,5 @@ class MAMLmodel(Model):
 
         return x
 
-
-def np_to_tensor(numpy_objs):
-    """
-    将numpy转成tensor
-    :param numpy_objs: numpy列表
-    :return:
-    """
-    return (tf.convert_to_tensor(obj, dtype=tf.float32) for obj in numpy_objs)
-
-
-def compute_loss(y_true, y_pred):
-    """
-    计算loss
-    :param y_true: 模型
-    :param y_pred:
-    :return:
-    """
-    mse = losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
-    # mse = K.mean(losses.mean_squared_error(y_true, y_pred))
-
-    return mse
-
-
-def copy_model(model, x):
-    """
-    将权值拷贝出来到新的模型上
-    :param model: 要被拷贝的模型
-    :param x: 输入的task,这用于运行前向传递，以将图形的权重添加为变量。
-    :return: 接受了新权值的模型
-    """
-    copied_model = MAMLmodel(cfg.num_classes)
-
-    # 如果我们不执行此步骤，则权重不会“初始化”，并且不会计算梯度。
-    copied_model.forward(x)
-    copied_model.set_weights(model.get_weights())
-
-    return copied_model
 
 
