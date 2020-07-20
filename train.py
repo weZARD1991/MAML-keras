@@ -103,7 +103,8 @@ def maml_train_on_batch(model,
             query_set = one_task[n_way * k_shot:]
 
             # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值）
-            model.forward(support_set)
+            # model.forward(support_set)
+            model(support_set)
             # 读取出一份权重，再inner loop结束后再恢复回去.
             meta_weights = model.get_weights()
 
@@ -111,7 +112,8 @@ def maml_train_on_batch(model,
             # Step 7：对support set进行梯度下降，求得meta-update的方向
             for inner_step in range(inner_train_step):
                 with tf.GradientTape() as support_tape:
-                    y_pred = model.forward(support_set)
+                    # y_pred = model.forward(support_set)
+                    y_pred = model(support_set)
                     support_loss = compute_loss(train_label, y_pred)
 
                 gradients = support_tape.gradient(support_loss, model.trainable_variables)
@@ -119,7 +121,8 @@ def maml_train_on_batch(model,
 
             # Step 6：评估一下模型
             valid_label = create_label(n_way, q_query)
-            y_pred = model.forward(query_set)
+            # y_pred = model.forward(query_set)
+            y_pred = model(query_set)
             query_loss = compute_loss(valid_label, y_pred)
 
             equal_list = tf.equal(tf.argmax(y_pred, -1), tf.cast(valid_label, tf.int64))

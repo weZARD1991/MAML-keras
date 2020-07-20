@@ -7,7 +7,7 @@
 
 from dataReader import *
 from train import *
-from net import MAMLmodel
+from net import *
 import tensorflow as tf
 import config as cfg
 import os
@@ -19,8 +19,8 @@ def main():
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
 
-    maml_model = MAMLmodel(num_classes=cfg.n_way)
-
+    # maml_model = MAMLmodel(num_classes=cfg.n_way)
+    maml_model = MAML_model(num_classes=cfg.n_way)
     # Step 2：一个大循环
     for epoch in range(1, cfg.epochs + 1):
         # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
