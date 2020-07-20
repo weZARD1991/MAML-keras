@@ -17,6 +17,6 @@ q_query = 1
 
 width = 28
 height = 28
-
+channel = 1
 
 save_path = "./logs/model/maml.h5"
