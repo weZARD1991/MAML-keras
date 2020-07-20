@@ -10,17 +10,41 @@
 # [n_way*k_shot:]是“验证”图片，最后在训练的时候对一个任务生成对应的标签
 
 import tensorflow as tf
-import tensorflow.keras as keras
-import tensorflow.keras.backend as keras_backend
 import pandas as pd
 import random
 import numpy as np
+import os
+import config as cfg
 
 
-def read_csv(csv_path, one_class_img=600):
+def read_omniglot(path):
+    classes = []
+
+    for alphabet in os.listdir(path):
+        # 语言路径
+        alphabet_path = os.path.join(path, alphabet)
+
+        for letter in os.listdir(alphabet_path):
+            # 字体路径
+            letter_path = os.path.join(alphabet_path, letter)
+            letter_class = []
+            # 具体图片路径
+            for img_name in os.listdir(letter_path):
+                img_path = os.path.join(letter_path, img_name)
+                letter_class.append(os.path.normpath(img_path))
+            classes.append(letter_class)
+
+    rate = int(len(classes) * 0.8)
+    train, valid = classes[:rate], classes[rate:]
+
+    return train, valid
+
+
+def read_miniimagenet(csv_path, one_class_img=600):
     """
     读取包含图片名和标签的csv
     :param csv_path:
+    :param one_class_img: 一个类中有几张图片
     :return:
     """
     csv = pd.read_csv(csv_path)
@@ -64,10 +88,12 @@ def get_meta_batch(dataset, meta_batch_size):
         yield tf.stack(batch_task)
 
 
-def process_one_task(one_task):
+def process_one_task(one_task, width=cfg.width, height=cfg.height):
     """
     对一个任务处理，对其中每一个图片进行读取
     :param one_task: 一个batch的任务[img_path, label]
+    :param width:
+    :param height:
     :return:
     """
     task = []
@@ -78,7 +104,7 @@ def process_one_task(one_task):
         image = tf.image.decode_jpeg(image)
         # 将unit8转为float32且归一化
         image = tf.image.convert_image_dtype(image, tf.float32)
-        image = tf.image.resize(image, [224, 224])
+        image = tf.image.resize(image, [width, height])
 
         task.append([image])
 
@@ -145,6 +171,6 @@ def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
 
 
 if __name__ == '__main__':
-    image_classes = read_csv("./data/labels/train.csv")
-    dataset = test(image_classes)
+    # image_classes = read_miniimagenet("./data/labels/train.csv")
+    image_classes = read_omniglot("./data/omniglot/images_background")
 

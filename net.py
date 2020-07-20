@@ -14,10 +14,10 @@ import config as cfg
 
 
 class MAMLmodel(Model):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, width=cfg.width, height=cfg.height):
         super(MAMLmodel, self).__init__()
         self.Conv2D_1 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu",
-                                         input_shape=[224, 224, 3])
+                                         input_shape=[width, height, 3])
         self.Conv2D_2 = layers.Conv2D(filters=32, kernel_size=3, padding="same", activation="relu")
         self.MaxPooling1 = layers.MaxPool2D(pool_size=2)
 

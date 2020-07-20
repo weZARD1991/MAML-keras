@@ -15,6 +15,8 @@ n_way = 5
 k_shot = 1
 q_query = 1
 
-update_times = 2
+width = 28
+height = 28
+
 
 save_path = "./logs/model/maml.h5"

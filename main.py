@@ -24,8 +24,7 @@ def main():
     # Step 2：一个大循环
     for epoch in range(1, cfg.epochs + 1):
         # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
-        train_list = read_csv("./data/labels/train.csv")
-        valid_list = read_csv("./data/labels/val.csv")
+        train_list, valid_list = read_omniglot("./data/omniglot/images_background")
         train_dataset = task_split(train_list)
         valid_dataset = task_split(valid_list)
 
@@ -74,8 +73,8 @@ def main():
         print("val_loss:{:.4f} val_accuracy:{:.4f}".format(np.mean(val_loss), np.mean(val_acc)))
 
     # test
-    test_list = read_csv("./data/labels/test.csv")
-    test_dataset = task_split(test_list)
+    # test_list = read_csv("./data/labels/test.csv")
+    # test_dataset = task_split(test_list)
     # maml_eval(maml_model, test_dataset, lr_outer=cfg.inner_lr, lr_inner=cfg.outer_lr, batch_size=cfg.batch_size)
     maml_model.save_weights(cfg.save_path)
 
