@@ -5,14 +5,14 @@
 # @Software: PyCharm
 # @Brief: 配置文件
 
-batch_size = 12
+batch_size = 16
 epochs = 40
 
-inner_lr = 8e-5
-outer_lr = 1e-6
+inner_lr = 8e-6
+outer_lr = 3e-9
 
 n_way = 5
-k_shot = 3
+k_shot = 1
 q_query = 1
 
 width = 28

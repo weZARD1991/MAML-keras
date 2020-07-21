@@ -19,7 +19,7 @@ def compute_loss(y_true, y_pred):
     :param y_pred:
     :return:
     """
-    mse = losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
+    mse = losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
     return mse
 
@@ -102,9 +102,6 @@ def maml_train_on_batch(model,
             support_set = one_task[:n_way * k_shot]
             query_set = one_task[n_way * k_shot:]
 
-            # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值）
-            # model.forward(support_set)
-            model(support_set)
             # 读取出一份权重，再inner loop结束后再恢复回去.
             meta_weights = model.get_weights()
 
@@ -116,12 +113,11 @@ def maml_train_on_batch(model,
                     y_pred = model(support_set)
                     support_loss = compute_loss(train_label, y_pred)
 
-                gradients = support_tape.gradient(support_loss, model.trainable_variables)
-                inner_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+                inner_grads = support_tape.gradient(support_loss, model.trainable_variables)
+                inner_optimizer.apply_gradients(zip(inner_grads, model.trainable_variables))
 
             # Step 6：评估一下模型
             valid_label = create_label(n_way, q_query)
-            # y_pred = model.forward(query_set)
             y_pred = model(query_set)
             query_loss = compute_loss(valid_label, y_pred)
 
@@ -135,8 +131,8 @@ def maml_train_on_batch(model,
         model.set_weights(meta_weights)
 
     if meta_update:
-        gradients = query_tape.gradient(meta_batch_loss, model.trainable_variables)
-        outer_optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        outer_grads = query_tape.gradient(meta_batch_loss, model.trainable_variables)
+        outer_optimizer.apply_gradients(zip(outer_grads, model.trainable_variables))
 
     return meta_batch_loss, np.mean(task_acc)
 

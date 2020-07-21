@@ -12,6 +12,7 @@ import tensorflow as tf
 import config as cfg
 import os
 from tqdm import tqdm
+import PIL
 
 
 def main():
@@ -20,14 +21,15 @@ def main():
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
 
-    # maml_model = MAMLmodel(num_classes=cfg.n_way)
     maml_model = MAML_model(num_classes=cfg.n_way)
-    # Step 2：一个大循环
+    # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值），如果是用keras的Sequential来建立模型就自动初始化了
+
+    # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
+    train_list, valid_list = read_omniglot("./data/omniglot/images_background")
+    train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
+    valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
+
     for epoch in range(1, cfg.epochs + 1):
-        # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
-        train_list, valid_list = read_omniglot("./data/omniglot/images_background")
-        train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
-        valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
         train_step = len(train_dataset) // cfg.batch_size
         valid_step = len(valid_dataset) // cfg.batch_size
@@ -51,7 +53,7 @@ def main():
         val_acc = []
         val_loss = []
         # valid
-        for batch_id in range(valid_step):
+        for batch_id in range(train_step):
             batch_task = next(get_meta_batch(valid_dataset, cfg.batch_size))
             loss, acc = maml_train_on_batch(maml_model,
                                             batch_task,
@@ -66,7 +68,7 @@ def main():
             val_acc.append(acc)
 
         # 输出验证结果
-        print("val_loss:{:.4f} val_accuracy:{:.4f}\n".format(np.mean(val_loss), np.mean(val_acc)))
+        print("\rval_loss:{:.4f} val_accuracy:{:.4f}\n".format(np.mean(val_loss), np.mean(val_acc)))
 
     # test
     # test_list = read_csv("./data/labels/test.csv")

@@ -15,6 +15,7 @@ import random
 import numpy as np
 import os
 import config as cfg
+import copy
 
 
 def read_omniglot(path):
@@ -111,7 +112,7 @@ def process_one_task(one_task, width=cfg.width, height=cfg.height):
     return task
 
 
-def create_label(n_way, k_shot, one_hot=True):
+def create_label(n_way, k_shot, one_hot=False):
     """
     创建标签，生成一个0 - n_way的序列，每个元素重复k_shot次
     :param n_way:
@@ -136,6 +137,7 @@ def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
     :return:
     """
     dataset = []
+    classes = copy.deepcopy(classes)
     # 这样计算循环次数的前提得是每个分类中图片数量相同，下面划分数据集的操作也是基于这个前提才能计算的
     # 总的循环数 = 图片总数 // 一个任务所包含图片的数量
     loop_num = len(classes) * len(classes[0]) // ((q_query + k_shot) * n_way)
