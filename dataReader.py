@@ -50,7 +50,7 @@ def read_miniimagenet(csv_path, one_class_img=600):
     """
     csv = pd.read_csv(csv_path)
 
-    image_list = list("./data/images/" + csv.iloc[:, 0])
+    image_list = list("./data/miniImageNet/images/" + csv.iloc[:, 0])
 
     num_class = len(image_list) // one_class_img    # 总共有几类
     classes = [[] for _ in range(num_class)]

@@ -25,7 +25,9 @@ def main():
     # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值），如果是用keras的Sequential来建立模型就自动初始化了
 
     # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
-    train_list, valid_list = read_omniglot("./data/omniglot/images_background")
+    train_list = read_miniimagenet("./data/miniImageNet/labels/train.csv")
+    valid_list = read_miniimagenet("./data/miniImageNet/labels/val.csv")
+    # train_list, valid_list = read_omniglot("./data/omniglot/images_background")
     train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
     valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
@@ -53,7 +55,7 @@ def main():
         val_acc = []
         val_loss = []
         # valid
-        for batch_id in range(train_step):
+        for batch_id in range(valid_step):
             batch_task = next(get_meta_batch(valid_dataset, cfg.batch_size))
             loss, acc = maml_train_on_batch(maml_model,
                                             batch_task,
