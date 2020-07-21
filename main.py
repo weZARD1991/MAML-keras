@@ -32,10 +32,20 @@ def main():
     train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
     valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
+    # 创建summary
+    summary_writer = tf.summary.create_file_writer(logdir=cfg.log_dir)
+
     for epoch in range(1, cfg.epochs + 1):
+
+        if epoch % cfg.task_update_time == 0:
+            # 每隔10次更新一下任务的组合
+            train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
         train_step = len(train_dataset) // cfg.batch_size
         valid_step = len(valid_dataset) // cfg.batch_size
+
+        train_loss = []
+        train_acc = []
 
         # train
         process_bar = tqdm(range(train_step), ncols=100, desc="Epoch {}".format(epoch), unit="step")
@@ -50,8 +60,9 @@ def main():
                                             lr_outer=cfg.outer_lr,
                                             inner_train_step=1)
 
-            process_bar.set_postfix({'loss': '{:.5f}'.format(loss),
-                                     'acc': '{:.5f}'.format(acc)})
+            train_loss.append(loss)
+            train_acc.append(acc)
+            process_bar.set_postfix({'loss': '{:.5f}'.format(loss), 'acc': '{:.5f}'.format(acc)})
 
         val_acc = []
         val_loss = []
@@ -69,6 +80,13 @@ def main():
                                             meta_update=False)
             val_loss.append(loss)
             val_acc.append(acc)
+
+        # 保存到tensorboard里
+        with summary_writer.as_default():
+            tf.summary.scalar('train_loss', np.mean(train_loss), step=epoch)
+            tf.summary.scalar('train_acc', np.mean(train_acc), step=epoch)
+            tf.summary.scalar('valid_loss', np.mean(val_loss), step=epoch)
+            tf.summary.scalar('valid_acc', np.mean(val_acc), step=epoch)
 
         # 输出验证结果
         print("\rval_loss:{:.4f} val_accuracy:{:.4f}\n".format(np.mean(val_loss), np.mean(val_acc)))

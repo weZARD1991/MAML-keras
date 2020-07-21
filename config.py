@@ -6,10 +6,10 @@
 # @Brief: 配置文件
 
 batch_size = 16
-epochs = 40
+epochs = 1000
 
-inner_lr = 8e-6
-outer_lr = 3e-9
+inner_lr = 1e-6
+outer_lr = 5e-5
 
 n_way = 5
 k_shot = 1
@@ -20,3 +20,6 @@ height = 28
 channel = 1
 
 save_path = "./logs/model/maml.h5"
+log_dir = "./logs/summary/"
+
+task_update_time = 10
