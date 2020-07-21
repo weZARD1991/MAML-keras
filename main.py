@@ -32,6 +32,9 @@ def main():
     train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
     valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
+    if not os.path.exists(cfg.log_dir):
+        os.mkdir(cfg.log_dir)
+
     # 创建summary
     summary_writer = tf.summary.create_file_writer(logdir=cfg.log_dir)
 
