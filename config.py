@@ -6,13 +6,13 @@
 # @Brief: 配置文件
 
 batch_size = 12
-epochs = 5
+epochs = 40
 
-inner_lr = 1e-3
-outer_lr = 1e-5
+inner_lr = 8e-5
+outer_lr = 1e-6
 
 n_way = 5
-k_shot = 1
+k_shot = 3
 q_query = 1
 
 width = 28

@@ -111,13 +111,15 @@ def process_one_task(one_task, width=cfg.width, height=cfg.height):
     return task
 
 
-def create_label(n_way, k_shot):
+def create_label(n_way, k_shot, one_hot=True):
     """
     创建标签，生成一个0 - n_way的序列，每个元素重复k_shot次
     :param n_way:
     :param k_shot:
     :return:
     """
+    if one_hot:
+        return tf.one_hot(np.repeat(range(n_way), k_shot), depth=n_way)
     return tf.convert_to_tensor(np.repeat(range(n_way), k_shot), dtype=tf.float32)
 
 

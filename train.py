@@ -19,7 +19,7 @@ def compute_loss(y_true, y_pred):
     :param y_pred:
     :return:
     """
-    mse = losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+    mse = losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
     return mse
 

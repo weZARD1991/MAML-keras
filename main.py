@@ -11,6 +11,7 @@ from net import *
 import tensorflow as tf
 import config as cfg
 import os
+from tqdm import tqdm
 
 
 def main():
@@ -25,15 +26,15 @@ def main():
     for epoch in range(1, cfg.epochs + 1):
         # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
         train_list, valid_list = read_omniglot("./data/omniglot/images_background")
-        train_dataset = task_split(train_list)
-        valid_dataset = task_split(valid_list)
+        train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
+        valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
-        step = 0
         train_step = len(train_dataset) // cfg.batch_size
         valid_step = len(valid_dataset) // cfg.batch_size
 
         # train
-        for batch_id in range(train_step):
+        process_bar = tqdm(range(train_step), ncols=100, desc="Epoch {}".format(epoch), unit="step")
+        for _ in process_bar:
             batch_task = next(get_meta_batch(train_dataset, cfg.batch_size))
             loss, acc = maml_train_on_batch(maml_model,
                                             batch_task,
@@ -44,14 +45,8 @@ def main():
                                             lr_outer=cfg.outer_lr,
                                             inner_train_step=1)
 
-            # 输出训练过程
-            rate = (step+1) / train_step
-            a = "*" * int(rate * 30)
-            b = "." * int((1 - rate) * 30)
-            print("\r{}/{} {:^3.0f}%[{}->{}] loss:{:.4f} accuracy:{:.4f}"
-                  .format(batch_id + 1, train_step, int(rate * 100), a, b, loss, acc), end="")
-            step += 1
-        print()
+            process_bar.set_postfix({'loss': '{:.5f}'.format(loss),
+                                     'acc': '{:.5f}'.format(acc)})
 
         val_acc = []
         val_loss = []
@@ -69,8 +64,9 @@ def main():
                                             meta_update=False)
             val_loss.append(loss)
             val_acc.append(acc)
-        # 输出训练过程
-        print("val_loss:{:.4f} val_accuracy:{:.4f}".format(np.mean(val_loss), np.mean(val_acc)))
+
+        # 输出验证结果
+        print("val_loss:{:.4f} val_accuracy:{:.4f}\n".format(np.mean(val_loss), np.mean(val_acc)))
 
     # test
     # test_list = read_csv("./data/labels/test.csv")
