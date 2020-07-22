@@ -34,6 +34,8 @@ def main():
 
     if not os.path.exists(cfg.log_dir):
         os.mkdir(cfg.log_dir)
+    for file in os.listdir(cfg.log_dir):
+        os.remove(os.path.join(cfg.log_dir, file))
 
     # 创建summary
     summary_writer = tf.summary.create_file_writer(logdir=cfg.log_dir)
