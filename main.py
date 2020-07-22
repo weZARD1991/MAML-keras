@@ -26,9 +26,9 @@ def main():
     # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值），如果是用keras的Sequential来建立模型就自动初始化了
 
     # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
-    train_list = read_miniimagenet("./data/miniImageNet/labels/train.csv")
-    valid_list = read_miniimagenet("./data/miniImageNet/labels/val.csv")
-    # train_list, valid_list = read_omniglot("./data/omniglot/images_background")
+    # train_list = read_miniimagenet("./data/miniImageNet/labels/train.csv")
+    # valid_list = read_miniimagenet("./data/miniImageNet/labels/val.csv")
+    train_list, valid_list = read_omniglot("./data/enhance_omniglot/Omniglot/images_background")
     train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
     valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
@@ -39,10 +39,6 @@ def main():
     summary_writer = tf.summary.create_file_writer(logdir=cfg.log_dir)
 
     for epoch in range(1, cfg.epochs + 1):
-
-        if epoch % cfg.task_update_time == 0:
-            # 每隔10次更新一下任务的组合
-            train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
         train_step = len(train_dataset) // cfg.batch_size
         valid_step = len(valid_dataset) // cfg.batch_size
@@ -69,8 +65,10 @@ def main():
 
         val_acc = []
         val_loss = []
+
         # valid
-        for batch_id in range(valid_step):
+        process_bar = tqdm(range(valid_step), ncols=100, desc="Epoch {}".format(epoch), unit="step")
+        for _ in process_bar:
             batch_task = next(get_meta_batch(valid_dataset, cfg.batch_size))
             loss, acc = maml_train_on_batch(maml_model,
                                             batch_task,
@@ -83,6 +81,8 @@ def main():
                                             meta_update=False)
             val_loss.append(loss)
             val_acc.append(acc)
+
+            process_bar.set_postfix({'val_loss': '{:.5f}'.format(loss), 'val_acc': '{:.5f}'.format(acc)})
 
         # 保存到tensorboard里
         with summary_writer.as_default():
