@@ -7,7 +7,6 @@
 
 from tensorflow.keras import optimizers, losses
 import tensorflow as tf
-from net import MAMLmodel, model_copy
 from dataReader import get_meta_batch, create_label
 import numpy as np
 
@@ -96,30 +95,28 @@ def maml_train_on_batch(model,
     # 先生成一个batch的数据
     task_loss = []
     task_acc = []
+
+    # 读取出一份权重，在update一个batch的任务之后再恢复回去
+    meta_weights = model.get_weights()
+
     with tf.GradientTape() as query_tape:
         for one_task in batch_task:
             # Step 5：切分数据集为support set 和 query set
             support_set = one_task[:n_way * k_shot]
             query_set = one_task[n_way * k_shot:]
 
-            # 读取出一份权重，再inner loop结束后再恢复回去.
-            # meta_weights = model.get_weights()
-            copy_model = model_copy(model)
-
             train_label = create_label(n_way, k_shot)
             # Step 7：对support set进行梯度下降，求得meta-update的方向
             for inner_step in range(inner_train_step):
                 with tf.GradientTape() as support_tape:
-                    # y_pred = model.forward(support_set)
-                    y_pred = copy_model(support_set)
+                    y_pred = model(support_set)
                     support_loss = compute_loss(train_label, y_pred)
 
-                inner_grads = support_tape.gradient(support_loss, copy_model.trainable_variables)
-                inner_optimizer.apply_gradients(zip(inner_grads, copy_model.trainable_variables))
+                inner_grads = support_tape.gradient(support_loss, model.trainable_variables)
+                inner_optimizer.apply_gradients(zip(inner_grads, model.trainable_variables))
 
             # Step 6：评估一下模型
             valid_label = create_label(n_way, q_query)
-            model = model_copy(copy_model)
             y_pred = model(query_set)
             query_loss = compute_loss(valid_label, y_pred)
 
@@ -130,7 +127,7 @@ def maml_train_on_batch(model,
 
         # Step 10：更新θ的权值，这里算的Loss是batch的loss平均
         meta_batch_loss = tf.reduce_mean(tf.stack(task_loss))
-        # model.set_weights(meta_weights)
+        model.set_weights(meta_weights)
 
     if meta_update:
         outer_grads = query_tape.gradient(meta_batch_loss, model.trainable_variables)

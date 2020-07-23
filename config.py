@@ -7,10 +7,10 @@
 
 batch_size = 32
 eval_batch_size = 20
-epochs = 1000
+epochs = 40
 
-inner_lr = 1e-5
-outer_lr = 8e-5
+inner_lr = 1e-3
+outer_lr = 1e-4
 
 n_way = 5
 k_shot = 1
