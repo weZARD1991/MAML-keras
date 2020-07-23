@@ -28,7 +28,8 @@ def main():
     # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
     # train_list = read_miniimagenet("./data/miniImageNet/labels/train.csv")
     # valid_list = read_miniimagenet("./data/miniImageNet/labels/val.csv")
-    train_list, valid_list = read_omniglot("./data/enhance_omniglot/Omniglot/images_background")
+    # train_list, valid_list = read_omniglot("./data/enhance_omniglot/Omniglot/images_background")
+    train_list, valid_list = read_omniglot_ones("./data/enhance_omniglot/Omniglot/images_background")
     train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
     valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
@@ -43,7 +44,7 @@ def main():
     for epoch in range(1, cfg.epochs + 1):
 
         train_step = len(train_dataset) // cfg.batch_size
-        valid_step = len(valid_dataset) // cfg.batch_size
+        valid_step = len(valid_dataset) // cfg.eval_batch_size
 
         train_loss = []
         train_acc = []
@@ -71,7 +72,7 @@ def main():
         # valid
         process_bar = tqdm(range(valid_step), ncols=100, desc="Epoch {}".format(epoch), unit="step")
         for _ in process_bar:
-            batch_task = next(get_meta_batch(valid_dataset, cfg.batch_size))
+            batch_task = next(get_meta_batch(valid_dataset, cfg.eval_batch_size))
             loss, acc = maml_train_on_batch(maml_model,
                                             batch_task,
                                             n_way=cfg.n_way,

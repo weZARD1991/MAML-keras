@@ -174,7 +174,59 @@ def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
     return dataset
 
 
+def read_omniglot_ones(path, q_query=1, n_way=5, k_shot=1):
+    """
+    将各个分类下的img_path，按任务为单位分类。这个API是基于Mini-ImageNet下实现的，其中每个类只有600个
+    为了均匀利用到所有数据，(q_query + k_shot) * n_way 要能被 图片数量整除
+    。n-way * k-shot张图片用来给inner loop训练，n-way * query是给out loop去test
+    dataset最终是 , shape = [batch_size, n_way * (k_shot + q_query), 1, 28, 28]
+    :param classes: shape为(class_num, img_num)的二位列表，存储了图片的路径
+    :param q_query: query-set的数量
+    :param n_way: 一个任务由几个类组成
+    :param k_shot: support-set数量
+    :return:
+    """
+    file_list = []
+    for alphabet in os.listdir(path):
+        alphabet_path = os.path.join(path, alphabet)
+
+        for letter in os.listdir(alphabet_path):
+            # 字体路径
+            letter_path = os.path.join(alphabet_path, letter)
+            file_list.append(letter_path)
+
+    image_list = []
+    for img_path in file_list:
+        sample = np.arange(20)
+        np.random.shuffle(sample)
+
+        img_list = os.listdir(img_path)
+        img_list.sort()
+
+        img_list = [os.path.join(img_path, img_list[i]) for i in sample[:q_query + k_shot]]
+        image_list.append(img_list)
+
+    sample = np.arange(len(image_list))
+    np.random.shuffle(sample)
+
+    dataset = []
+    for start in range(0, len(sample), n_way):
+        if len(sample[start: start + n_way]) < n_way:
+            break
+
+        train_task = []
+        valid_task = []
+        for i in sample[start: start + n_way]:
+            train_task += image_list[i][:k_shot]
+            valid_task += image_list[i][k_shot:]
+
+        dataset.append(train_task + valid_task)
+
+    return dataset[:640], dataset[640:]
+
+
 if __name__ == '__main__':
     # image_classes = read_miniimagenet("./data/labels/train.csv")
-    image_classes = read_omniglot("./data/omniglot/images_background")
+    train, valid = read_omniglot("./data/enhance_omniglot/Omniglot/images_background")
+
 
