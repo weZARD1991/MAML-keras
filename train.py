@@ -5,7 +5,7 @@
 # @Software: PyCharm
 # @Brief: 有关于训练，梯度优化的函数
 
-from tensorflow.keras import optimizers, losses
+from tensorflow.keras import optimizers, losses, metrics
 import tensorflow as tf
 from dataReader import get_meta_batch, create_label
 import numpy as np
@@ -88,8 +88,8 @@ def maml_train_on_batch(model,
     :param meta_update: 是否进行meta update
     :return: loss, accuracy -- 都是均值
     """
-    outer_optimizer = optimizers.Adam(lr_outer)
-    inner_optimizer = optimizers.Adam(lr_inner)
+    outer_optimizer = optimizers.SGD(lr_outer)
+    inner_optimizer = optimizers.SGD(lr_inner)
 
     # Step 3-4：采样一个batch的小样本任务，遍历生成的数据
     # 先生成一个batch的数据
@@ -102,25 +102,26 @@ def maml_train_on_batch(model,
     with tf.GradientTape() as query_tape:
         for one_task in batch_task:
             # Step 5：切分数据集为support set 和 query set
-            support_set = one_task[:n_way * k_shot]
-            query_set = one_task[n_way * k_shot:]
+            support_x = one_task[:n_way * k_shot]
+            query_x = one_task[n_way * k_shot:]
 
-            train_label = create_label(n_way, k_shot)
+            support_y = create_label(n_way, k_shot)
             # Step 7：对support set进行梯度下降，求得meta-update的方向
             for inner_step in range(inner_train_step):
                 with tf.GradientTape() as support_tape:
-                    y_pred = model(support_set)
-                    support_loss = compute_loss(train_label, y_pred)
+                    support_logits = model(support_x)
+                    support_loss = compute_loss(support_y, support_logits)
 
                 inner_grads = support_tape.gradient(support_loss, model.trainable_variables)
                 inner_optimizer.apply_gradients(zip(inner_grads, model.trainable_variables))
 
             # Step 6：评估一下模型
-            valid_label = create_label(n_way, q_query)
-            y_pred = model(query_set)
-            query_loss = compute_loss(valid_label, y_pred)
+            query_y = create_label(n_way, q_query)
+            query_logits = model(query_x)
+            query_pred = tf.nn.softmax(query_logits)
+            query_loss = compute_loss(query_y, query_logits)
 
-            equal_list = tf.equal(tf.argmax(y_pred, -1), tf.cast(valid_label, tf.int64))
+            equal_list = tf.equal(tf.argmax(query_pred, -1), tf.cast(query_y, tf.int64))
             acc = tf.reduce_mean(tf.cast(equal_list, tf.float32))
             task_acc.append(acc)
             task_loss.append(query_loss)
