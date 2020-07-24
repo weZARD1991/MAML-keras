@@ -88,8 +88,8 @@ def maml_train_on_batch(model,
     :param meta_update: 是否进行meta update
     :return: loss, accuracy -- 都是均值
     """
-    outer_optimizer = optimizers.SGD(lr_outer)
-    inner_optimizer = optimizers.SGD(lr_inner)
+    outer_optimizer = optimizers.Adam(lr_outer)
+    inner_optimizer = optimizers.Adam(lr_inner)
 
     # Step 3-4：采样一个batch的小样本任务，遍历生成的数据
     # 先生成一个batch的数据
@@ -104,9 +104,21 @@ def maml_train_on_batch(model,
             # Step 5：切分数据集为support set 和 query set
             support_x = one_task[:n_way * k_shot]
             query_x = one_task[n_way * k_shot:]
-
             support_y = create_label(n_way, k_shot)
-            # Step 7：对support set进行梯度下降，求得meta-update的方向
+            query_y = create_label(n_way, q_query)
+
+            # with tf.GradientTape() as support_tape:
+            #     support_logits = model(support_x)
+            #     support_loss = compute_loss(support_y, support_logits)
+            #
+            # inner_grads = support_tape.gradient(support_loss, model.trainable_variables)
+            # inner_optimizer.apply_gradients(zip(inner_grads, model.trainable_variables))
+            #
+            # query_logits = model(query_x)
+            # query_loss = compute_loss(query_y, query_logits)
+            # task_loss.append(query_loss)
+
+            # Step 7-8：对support set进行梯度下降，求得meta-update的方向
             for inner_step in range(inner_train_step):
                 with tf.GradientTape() as support_tape:
                     support_logits = model(support_x)
@@ -116,7 +128,6 @@ def maml_train_on_batch(model,
                 inner_optimizer.apply_gradients(zip(inner_grads, model.trainable_variables))
 
             # Step 6：评估一下模型
-            query_y = create_label(n_way, q_query)
             query_logits = model(query_x)
             query_pred = tf.nn.softmax(query_logits)
             query_loss = compute_loss(query_y, query_logits)

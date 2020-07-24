@@ -9,7 +9,7 @@ batch_size = 32
 eval_batch_size = 20
 epochs = 40
 
-inner_lr = 1e-3
+inner_lr = 5e-4
 outer_lr = 1e-4
 
 n_way = 5

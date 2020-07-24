@@ -60,7 +60,7 @@ def main():
                                             q_query=cfg.q_query,
                                             lr_inner=cfg.inner_lr,
                                             lr_outer=cfg.outer_lr,
-                                            inner_train_step=1)
+                                            inner_train_step=2)
 
             train_loss.append(loss)
             train_acc.append(acc)
@@ -80,7 +80,7 @@ def main():
                                             q_query=cfg.q_query,
                                             lr_inner=cfg.inner_lr,
                                             lr_outer=cfg.outer_lr,
-                                            inner_train_step=3,
+                                            inner_train_step=10,
                                             meta_update=False)
             val_loss.append(loss)
             val_acc.append(acc)
