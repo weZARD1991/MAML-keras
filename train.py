@@ -144,7 +144,7 @@ def maml_train_on_batch(model,
 
         # Step 10：更新θ的权值，这里算的Loss是batch的loss平均
         meta_batch_loss = tf.reduce_mean(tf.stack(task_loss))
-        model.set_weighets(inner_model.get_weights())
+        model.set_weights(inner_model.get_weights())
         # model.set_weights(meta_weights)
 
     if meta_update:
