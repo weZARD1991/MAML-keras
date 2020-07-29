@@ -71,19 +71,22 @@ def get_meta_batch(dataset, meta_batch_size):
     :param meta_batch_size: batch_size个任务组成一个meta_batch
     :return: 生成一个batch的任务
     """
-    j = 0
+    if "index" not in get_meta_batch.__dict__ or get_meta_batch.index > len(dataset):
+        get_meta_batch.index = 0
+
     while len(dataset) > 0:
         batch_task = []
-        j %= len(dataset)
+        get_meta_batch.index %= len(dataset)
         for i in range(meta_batch_size):
             try:
-                data = process_one_task(dataset[j])
+                data = process_one_task(dataset[get_meta_batch.index])
                 data = tf.squeeze(data, axis=1)
                 batch_task.append(data)
 
             except IndexError:
                 return
-            j += 1
+
+            get_meta_batch.index += 1
 
         # 将他们组合到新的任务里
         yield tf.stack(batch_task)
@@ -112,15 +115,13 @@ def process_one_task(one_task, width=cfg.width, height=cfg.height):
     return task
 
 
-def create_label(n_way, k_shot, one_hot=False):
+def create_label(n_way, k_shot):
     """
     创建标签，生成一个0 - n_way的序列，每个元素重复k_shot次
     :param n_way:
     :param k_shot:
     :return:
     """
-    if one_hot:
-        return tf.one_hot(np.repeat(range(n_way), k_shot), depth=n_way)
     return tf.convert_to_tensor(np.repeat(range(n_way), k_shot), dtype=tf.float32)
 
 
@@ -180,7 +181,6 @@ def read_omniglot_ones(path, q_query=1, n_way=5, k_shot=1):
     为了均匀利用到所有数据，(q_query + k_shot) * n_way 要能被 图片数量整除
     。n-way * k-shot张图片用来给inner loop训练，n-way * query是给out loop去test
     dataset最终是 , shape = [batch_size, n_way * (k_shot + q_query), 1, 28, 28]
-    :param classes: shape为(class_num, img_num)的二位列表，存储了图片的路径
     :param q_query: query-set的数量
     :param n_way: 一个任务由几个类组成
     :param k_shot: support-set数量
@@ -225,8 +225,5 @@ def read_omniglot_ones(path, q_query=1, n_way=5, k_shot=1):
     return dataset[:640], dataset[640:]
 
 
-if __name__ == '__main__':
-    # image_classes = read_miniimagenet("./data/labels/train.csv")
-    train, valid = read_omniglot("./data/enhance_omniglot/Omniglot/images_background")
 
 
