@@ -54,7 +54,7 @@ def main():
         # train
         process_bar = tqdm(range(train_step), ncols=100, desc="Epoch {}".format(epoch), unit="step")
         for _ in process_bar:
-            batch_task = next(get_meta_batch(train_dataset, cfg.batch_size))
+            batch_task = next(get_meta_batch(train_dataset, cfg.batch_size, dataset_str='train'))
             loss, acc = maml_train_on_batch(maml_model,
                                             inner_model,
                                             batch_task,
@@ -75,7 +75,7 @@ def main():
         # valid
         process_bar = tqdm(range(valid_step), ncols=100, desc="Epoch {}".format(epoch), unit="step")
         for _ in process_bar:
-            batch_task = next(get_meta_batch(valid_dataset, cfg.eval_batch_size))
+            batch_task = next(get_meta_batch(valid_dataset, cfg.eval_batch_size, dataset_str='validation'))
             loss, acc = maml_train_on_batch(maml_model,
                                             inner_model,
                                             batch_task,

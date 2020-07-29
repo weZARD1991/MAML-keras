@@ -64,17 +64,21 @@ def read_miniimagenet(csv_path, one_class_img=600):
     return classes
 
 
-def get_meta_batch(dataset, meta_batch_size):
+def get_meta_batch(dataset, meta_batch_size, dataset_str):
     """
     生成一个batch的任务，用于训练。将传入的列表中的数据组合成一个batch_size
     :param dataset:
     :param meta_batch_size: batch_size个任务组成一个meta_batch
     :return: 生成一个batch的任务
     """
-    if "index" not in get_meta_batch.__dict__ or get_meta_batch.index > len(dataset):
-        get_meta_batch.index = 0
+    if "dataset" not in get_meta_batch.__dict__:
+        get_meta_batch.dataset = dataset_str
 
-    while len(dataset) > 0:
+    if "index" not in get_meta_batch.__dict__ or get_meta_batch.dataset != dataset_str:
+        get_meta_batch.index = 0
+        get_meta_batch.dataset = dataset_str
+
+    while True:
         batch_task = []
         get_meta_batch.index %= len(dataset)
         for i in range(meta_batch_size):
