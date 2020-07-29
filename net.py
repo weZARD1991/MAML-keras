@@ -19,13 +19,13 @@ def MAML_model(num_classes, width=cfg.width, height=cfg.height, channel=cfg.chan
         layers.BatchNormalization(),
         layers.MaxPool2D(pool_size=2, strides=2),
 
-        # layers.Conv2D(filters=64, kernel_size=3, padding="same", activation="relu"),
-        # layers.BatchNormalization(),
-        # layers.MaxPool2D(pool_size=2, strides=2),
-        #
-        # layers.Conv2D(filters=64, kernel_size=3, padding="same", activation="relu"),
-        # layers.BatchNormalization(),
-        # layers.MaxPool2D(pool_size=2, strides=2),
+        layers.Conv2D(filters=64, kernel_size=3, padding="same", activation="relu"),
+        layers.BatchNormalization(),
+        layers.MaxPool2D(pool_size=2, strides=2),
+
+        layers.Conv2D(filters=64, kernel_size=3, padding="same", activation="relu"),
+        layers.BatchNormalization(),
+        layers.MaxPool2D(pool_size=2, strides=2),
 
         layers.Conv2D(filters=64, kernel_size=3, padding="same", activation="relu"),
         layers.BatchNormalization(),
