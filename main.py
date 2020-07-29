@@ -6,7 +6,7 @@
 # @Brief: 程序启动脚本
 
 from dataReader import *
-from train_test import *
+from train import *
 from net import *
 import tensorflow as tf
 import config as cfg

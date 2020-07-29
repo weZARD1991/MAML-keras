@@ -98,8 +98,8 @@ def maml_train_on_batch(model,
     task_acc = []
 
     # 读取出一份权重，在update一个batch的任务之后再恢复回去
-    # meta_weights = model.get_weights()
-    inner_model.set_weights(model.get_weights())
+    meta_weights = model.get_weights()
+    inner_model.set_weights(meta_weights)
 
     with tf.GradientTape() as query_tape:
         for one_task in batch_task:
@@ -119,7 +119,8 @@ def maml_train_on_batch(model,
                 inner_optimizer.apply_gradients(zip(inner_grads, inner_model.trainable_variables))
 
             # 用query_set和θ’计算logits和loss
-            query_logits = inner_model(query_x)
+            model.set_weights(inner_model.get_weights())
+            query_logits = model(query_x)
             query_pred = tf.nn.softmax(query_logits)
             query_loss = compute_loss(query_y, query_logits)
 
@@ -130,7 +131,7 @@ def maml_train_on_batch(model,
 
         # Step 10：更新θ的权值，这里算的Loss是batch的loss平均
         meta_batch_loss = tf.reduce_mean(tf.stack(task_loss))
-        # model.set_weights(meta_weights)
+        model.set_weights(meta_weights)
 
     if meta_update:
         outer_grads = query_tape.gradient(meta_batch_loss, model.trainable_variables)
