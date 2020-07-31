@@ -6,8 +6,8 @@
 # @Brief: 程序启动脚本
 
 from dataReader import *
-from train import *
-from net import *
+from train import maml_train_on_batch, maml_eval
+from net import MAML_model
 import tensorflow as tf
 import config as cfg
 import os
@@ -22,15 +22,14 @@ def main():
             tf.config.experimental.set_memory_growth(gpu, True)
 
     maml_model = MAML_model(num_classes=cfg.n_way)
-    # maml_model.build(input_shape=(None, 28, 28, 1))
     # maml_model.load_weights(cfg.save_path)
     # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值），如果是用keras的Sequential来建立模型就自动初始化了
 
     # 把数据读取放入Epoch里面，每次读出来的任务里面图片组合都不同
     # train_list = read_miniimagenet("./data/miniImageNet/labels/train.csv")
     # valid_list = read_miniimagenet("./data/miniImageNet/labels/val.csv")
-    train_list, valid_list = read_omniglot("./data/omniglot/images_background")
-    # train_list, valid_list = read_omniglot_ones("./data/enhance_omniglot/Omniglot/images_background")
+    # train_list, valid_list = read_omniglot("./data/omniglot/images_background")
+    train_list, valid_list = read_enhance_omniglot("./data/enhance_omniglot/Omniglot/images_background")
     train_dataset = task_split(train_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
     valid_dataset = task_split(valid_list, q_query=cfg.q_query, n_way=cfg.n_way, k_shot=cfg.k_shot)
 
@@ -108,7 +107,8 @@ def main():
     # test
     # test_list = read_csv("./data/labels/test.csv")
     # test_dataset = task_split(test_list)
-    # maml_eval(maml_model, test_dataset, lr_outer=cfg.inner_lr, lr_inner=cfg.outer_lr, batch_size=cfg.batch_size)
+    # test_iter = DataIter(test_dataset)
+    # maml_eval(maml_model, test_iter, lr_outer=cfg.inner_lr, lr_inner=cfg.outer_lr, batch_size=cfg.eval_batch_size)
     maml_model.save_weights(cfg.save_path)
 
 

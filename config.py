@@ -13,7 +13,7 @@ inner_lr = 1e-2
 outer_lr = 1e-3
 
 n_way = 5
-k_shot = 8
+k_shot = 1
 q_query = 1
 
 width = 28

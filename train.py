@@ -24,7 +24,7 @@ def compute_loss(y_true, y_pred):
 
 
 def maml_eval(model,
-              test_dataset,
+              test_iter,
               n_way=5,
               k_shot=1,
               q_query=1,
@@ -34,7 +34,7 @@ def maml_eval(model,
     """
     maml的测试函数
     :param model: 经过训练后的模型
-    :param test_dataset: 测试集
+    :param test_iter: 测试集的迭代器对象
     :param n_way: 一个任务内分类的数量
     :param k_shot: support set
     :param q_query: query set
@@ -49,7 +49,7 @@ def maml_eval(model,
     test_loss = []
 
     for batch_id in range(test_step):
-        batch_task = next(get_meta_batch(test_dataset, batch_size))
+        batch_task = get_meta_batch(test_iter, batch_size)
         loss, acc = maml_train_on_batch(model,
                                         batch_task,
                                         n_way=n_way,
