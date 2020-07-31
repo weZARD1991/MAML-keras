@@ -18,7 +18,7 @@ few-shot learning译为小样本学习，是指从极少的样本中学习出一
 
 Support set指的是参考集，Query set指的是测试集。用人识别动物种类大比分，有5种不同的动物，每种动物2张图片，这样10张图片给人做参考。另外给出5张动物图片，让人去判断各自属于那一种类。那么10张作为参考的图片就称为Support set，5张测试图片就称为Query set。
 
-<img src="https://i.loli.net/2020/07/31/VyDEob1fC3L7mjh.png" alt="image-20200731165740436.png" style="zoom:50%;" />
+<img src="https://i.loli.net/2020/07/31/jKm4AituQxqZaTP.png" alt="image-20200731165740436.png" style="zoom:50%;" />
 
 ## 二、什么是MAML?
 
