@@ -18,7 +18,39 @@ import config as cfg
 import copy
 
 
+class DataIter(object):
+    """
+    将数据集路径列表变成迭代器，加快数据读取速度
+    """
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.current_num = 0
+
+    # 使用iter()方法的时候,会调用__iter__
+    def __iter__(self):
+        # 简化之后,这里就要返回可迭代对象的本身
+        return self
+
+    def __next__(self):
+
+        # 防止迭代的列表越界
+        if self.current_num >= len(self.dataset):
+            # 当我们把列表的元素取完之后,要产生停止信号,
+            # 但在这里为了能够不停的取数据，可以把current_num置为0，以达到tf.data的repeat的效果
+            self.current_num = 0
+
+        ret = self.dataset[self.current_num]
+        self.current_num += 1
+
+        return ret
+
+
 def read_omniglot(path):
+    """
+    读取omniglot，将其存入列表种
+    :param path:
+    :return:
+    """
     classes = []
 
     for alphabet in os.listdir(path):
@@ -64,42 +96,28 @@ def read_miniimagenet(csv_path, one_class_img=600):
     return classes
 
 
-def get_meta_batch(dataset, meta_batch_size, dataset_str):
+def get_meta_batch(iterator, meta_batch_size):
     """
     生成一个batch的任务，用于训练。将传入的列表中的数据组合成一个batch_size
-    :param dataset:
+    :param iterator: 数据集的迭代器对象
     :param meta_batch_size: batch_size个任务组成一个meta_batch
     :return: 生成一个batch的任务
     """
-    if "dataset" not in get_meta_batch.__dict__:
-        get_meta_batch.dataset = dataset_str
+    batch_task = list()
 
-    if "index" not in get_meta_batch.__dict__ or get_meta_batch.dataset != dataset_str:
-        get_meta_batch.index = 0
-        get_meta_batch.dataset = dataset_str
+    for _ in range(meta_batch_size):
+        one_task_img_path = next(iterator)
+        one_task_img_data = process_one_task(one_task_img_path)
+        one_task_img_data = tf.squeeze(one_task_img_data, axis=1)
+        batch_task.append(one_task_img_data)
 
-    while True:
-        batch_task = []
-        get_meta_batch.index %= len(dataset)
-        for i in range(meta_batch_size):
-            try:
-                data = process_one_task(dataset[get_meta_batch.index])
-                data = tf.squeeze(data, axis=1)
-                batch_task.append(data)
-
-            except IndexError:
-                return
-
-            get_meta_batch.index += 1
-
-        # 将他们组合到新的任务里
-        yield tf.stack(batch_task)
+    return batch_task
 
 
 def process_one_task(one_task, width=cfg.width, height=cfg.height):
     """
     对一个任务处理，对其中每一个图片进行读取
-    :param one_task: 一个batch的任务[img_path, label]
+    :param one_task: 一个batch的任务[img_path]
     :param width:
     :param height:
     :return:
@@ -151,11 +169,13 @@ def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
     random.shuffle(choose)
 
     end = 0
+    # drop_last来控制丢弃剩余几个元素
+    drop_last = False
 
     for _ in range(loop_num):
         # 用来存储一个任务的图片
         one_task = []
-        # 索引有可能会大于列表长度，故需要截断处理，且每次的start都应该是上一个值的结束值
+        # 索引有可能会大于列表长度，故需要截断处理，且每次的start都应该是上一个end+1(切片取不到end)
         start = end
         end = (start + n_way) % len(classes)
 
@@ -167,12 +187,23 @@ def task_split(classes: list, q_query=1, n_way=5, k_shot=1):
         # 循环n_way次，取出k_shot个训练图像
         for i in task_class:
             for _ in range(k_shot):
+                if len(classes[i]) <= 0:
+                    drop_last = True
+                    break
+
                 one_task.append(classes[i].pop(0))
 
         # 取出q_query个训练图像
         for i in task_class:
             for _ in range(q_query):
+                if len(classes[i]) <= 0:
+                    drop_last = True
+                    break
+
                 one_task.append(classes[i].pop(0))
+
+        if drop_last:
+            break
 
         dataset.append(one_task)
 
