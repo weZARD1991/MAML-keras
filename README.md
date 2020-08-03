@@ -18,7 +18,7 @@ few-shot learning译为小样本学习，是指从极少的样本中学习出一
 
 Support set指的是参考集，Query set指的是测试集。用人识别动物种类大比分，有5种不同的动物，每种动物2张图片，这样10张图片给人做参考。另外给出5张动物图片，让人去判断各自属于那一种类。那么10张作为参考的图片就称为Support set，5张测试图片就称为Query set。
 
-<img src="https://i.loli.net/2020/07/31/VyDEob1fC3L7mjh.png" alt="image-20200731165740436.png" style="zoom:50%;" />
+<img src="https://i.loli.net/2020/07/31/jKm4AituQxqZaTP.png" alt="image-20200731165740436.png" style="zoom:50%;" />
 
 ## 二、什么是MAML?
 
@@ -43,13 +43,13 @@ Support set指的是参考集，Query set指的是测试集。用人识别动物
 
 假设有一个模型从task1的数据中训练出来了一组权重，我们记为$\theta1$，这个$\theta1$是图中深绿色的点，可以看到，在task1下，他已经达到了全局最优。而如果我们的模型如果用$\theta1$作为task2的初始值，我们最终将会到达浅绿色的点，而这个点只是task2的局部最优点。产生这样的问题也很简单，就是因为模型在训练task1的数据时并不用考虑task2的数据。
 
-<img src="https://i.loli.net/2020/07/31/WmiYEQRSVy4vX3n.png" alt="pretraining.png" style="zoom:50%;" />
+<img src="https://i.loli.net/2020/07/31/qPtvoZ9FpdWuHKE.png" alt="pretraining.png" style="zoom:50%;" />
 
 - MAML
 
 MAML则需要同时考虑两个数据集的分布，假设MAML经过训练以后得到了一组权重我们记为$\theta2$，虽然从图中来看，这个权重对于两个任务来说，都没有达到全局最优。但是很明显，**经过训练以后**，他们都能收敛到全局最优。
 
-<img src="https://i.loli.net/2020/07/31/lGYzwyt72eO8oXS.png" alt="maml.png" style="zoom:50%;" />
+<img src="https://i.loli.net/2020/07/31/Igp9UNjs7o2mZhE.png" alt="maml.png" style="zoom:50%;" />
 
 所以，Pretraining每次强调的都是**当下**这个模型能不能达到最优，而MAML强调的则是**经过训练**以后能不能达到最优。
 
