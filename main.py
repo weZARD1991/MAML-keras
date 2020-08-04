@@ -22,7 +22,6 @@ def main():
             tf.config.experimental.set_memory_growth(gpu, True)
 
     maml_model = MAML_model(num_classes=cfg.n_way)
-    inner_model = MAML_model(num_classes=cfg.n_way)
     # maml_model.load_weights(cfg.save_path)
     # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值），如果是用keras的Sequential来建立模型就自动初始化了
 
@@ -37,6 +36,9 @@ def main():
     train_iter = DataIter(train_dataset)
     valid_iter = DataIter(valid_dataset)
 
+    train_step = len(train_dataset) // cfg.batch_size
+    valid_step = len(valid_dataset) // cfg.eval_batch_size
+
     # 删除上次训练留下的summary文件
     if not os.path.exists(cfg.log_dir):
         os.mkdir(cfg.log_dir)
@@ -47,10 +49,6 @@ def main():
     summary_writer = tf.summary.create_file_writer(logdir=cfg.log_dir)
 
     for epoch in range(1, cfg.epochs + 1):
-
-        train_step = len(train_dataset) // cfg.batch_size
-        valid_step = len(valid_dataset) // cfg.eval_batch_size
-
         train_loss = []
         train_acc = []
 
@@ -59,7 +57,6 @@ def main():
         for _ in process_bar:
             batch_task = get_meta_batch(train_iter, cfg.batch_size)
             loss, acc = maml_train_on_batch(maml_model,
-                                            inner_model,
                                             batch_task,
                                             n_way=cfg.n_way,
                                             k_shot=cfg.k_shot,
@@ -83,7 +80,6 @@ def main():
         for _ in process_bar:
             batch_task = get_meta_batch(valid_iter, cfg.eval_batch_size)
             loss, acc = maml_train_on_batch(maml_model,
-                                            inner_model,
                                             batch_task,
                                             n_way=cfg.n_way,
                                             k_shot=cfg.k_shot,
