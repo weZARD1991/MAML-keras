@@ -101,6 +101,7 @@ def maml_train_on_batch(model,
 
     with tf.GradientTape() as query_tape:
         for one_task in batch_task:
+            model.set_weights(meta_weights)
             # Step 5：切分数据集为support set 和 query set
             support_x = one_task[:n_way * k_shot]
             query_x = one_task[n_way * k_shot:]
