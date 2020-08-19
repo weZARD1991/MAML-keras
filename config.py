@@ -6,10 +6,10 @@
 # @Brief: 配置文件
 
 batch_size = 4
-eval_batch_size = 4
+eval_batch_size = 1
 epochs = 40
 
-inner_lr = 1e-2
+inner_lr = 0.05
 outer_lr = 1e-3
 
 n_way = 5

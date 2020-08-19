@@ -7,7 +7,7 @@
 
 from dataReader import *
 from train import maml_train_on_batch, maml_eval
-from net import MAML_model
+from net import MAML_model, MAMLmodel
 import tensorflow as tf
 import config as cfg
 import os
@@ -16,12 +16,14 @@ import PIL
 
 
 def main():
-    gpus = tf.config.experimental.list_physical_devices("GPU")
-    if gpus:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
+    os.environ["CUDA_VISIBLE_DEVICES"]="-1"
+    # gpus = tf.config.experimental.list_physical_devices("GPU")
+    # if gpus:
+    #     for gpu in gpus:
+    #         tf.config.experimental.set_memory_growth(gpu, True)
 
-    maml_model = MAML_model(num_classes=cfg.n_way)
+    maml_model = MAMLmodel(num_classes=cfg.n_way)
+    maml_model.build(input_shape=(None, cfg.height, cfg.width, cfg.channel))
     # maml_model.load_weights(cfg.save_path)
     # 直接进行前向传播，不然权重就是空的（前向传播不会改变权值），如果是用keras的Sequential来建立模型就自动初始化了
 
