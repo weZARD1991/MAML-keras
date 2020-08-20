@@ -55,3 +55,117 @@ MAML则需要同时考虑两个数据集的分布，假设MAML经过训练以后
 
 
 
+## 三、MAML的核心算法
+
+![Figure.png](https://i.loli.net/2020/08/20/JdoWSbLKe1xOfUr.png)
+
+刚刚说了MAML关注的是，模型使用一份“适应性很强的”权重，它经过几次梯度下降就可以很好的适用于新的任务。那么我们训练的目标就变成了“如何找到这个权重”。而MAML作为其中一种实现方式，它先对一个batch中的每个任务都训练一遍，然后回到这个原始的位置，对这些任务的loss进行一个综合的判断，再选择一个适合所有任务的方向。
+
+其中有监督学习的分类问题算法流程如下：
+
+![Algorithm2.png](https://i.loli.net/2020/08/20/jg4N8u7JEePHrO1.png)
+
+先决条件：
+
+1. 以任务为单位的数据集
+2. 两个学习率 $\alpha 、\beta$
+
+流程解析（其中缩进代表在循环内部）：
+
+Step 1: 随机初始化一个权重
+
+Step 2: 一个while循环，对应的是训练中的epochs
+
+​			Step 3: 采样一个batch的任务（假设为4个任务）
+
+​			Step 4: for循环，用于遍历一个任务中的图片
+
+​					Step 5: 从support set中取出一张图片和标签
+
+​					Step 6-7: 对这一张图片进行前向传播，计算梯度后用$\alpha$反向传播，更新到$\theta'$中。
+
+​					Step 8: 从query set中取出一张图片和标签进行meta-update
+
+​			Step 10: 将所有用$\theta'$计算出来的损失求和，计算梯度后用$\beta$进行梯度下降，更新到$\theta$中
+
+相关代码如下：
+
+```Python
+def maml_train_on_batch(model,
+                        batch_task,
+                        n_way=5,
+                        k_shot=1,
+                        q_query=1,
+                        lr_inner=0.001,
+                        lr_outer=0.002,
+                        inner_train_step=1,
+                        meta_update=True):
+    """
+    根据论文上Algorithm 1上的流程进行模型的训练
+    :param model: MAML的模型
+    :param batch_task: 一个batch 的任务
+    :param n_way: 一个任务内分类数量
+    :param k_shot: support set的数量
+    :param q_query: query的数量
+    :param lr_inner: 内层support set的学习率
+    :param lr_outer: 外层query set任务的学习率
+    :param inner_train_step: 内层support set的训练次数
+    :param meta_update: 是否进行meta update
+    :return: loss, accuracy -- 都是均值
+    """
+    outer_optimizer = optimizers.Adam(lr_outer)
+    inner_optimizer = optimizers.Adam(lr_inner)
+
+    # Step 3-4：采样一个batch的小样本任务，遍历生成的数据
+    # 先生成一个batch的数据
+    task_loss = []
+    task_acc = []
+
+    # 读取出一份权重，在update一个batch的任务之后再恢复回去
+    meta_weights = model.get_weights()
+
+    with tf.GradientTape() as query_tape:
+        for one_task in batch_task:
+            model.set_weights(meta_weights)
+            # Step 5：切分数据集为support set 和 query set
+            support_x = one_task[:n_way * k_shot]
+            query_x = one_task[n_way * k_shot:]
+            support_y = create_label(n_way, k_shot)
+            query_y = create_label(n_way, q_query)
+
+            # Step 7-8：对support set进行梯度下降，求得meta-update的方向
+            for inner_step in range(inner_train_step):
+                with tf.GradientTape() as support_tape:
+                    support_logits = model(support_x)
+                    support_loss = compute_loss(support_y, support_logits)
+
+                inner_grads = support_tape.gradient(support_loss, model.trainable_variables)
+                inner_optimizer.apply_gradients(zip(inner_grads, model.trainable_variables))
+
+            # 用query_set和θ’计算logits和loss
+            query_logits = model(query_x)
+            query_pred = tf.nn.softmax(query_logits)
+            query_loss = compute_loss(query_y, query_logits)
+
+            equal_list = tf.equal(tf.argmax(query_pred, -1), tf.cast(query_y, tf.int64))
+            acc = tf.reduce_mean(tf.cast(equal_list, tf.float32))
+            task_acc.append(acc)
+            task_loss.append(query_loss)
+
+        # Step 10：更新θ的权值，这里算的Loss是batch的loss平均
+        meta_batch_loss = tf.reduce_mean(tf.stack(task_loss))
+        model.set_weights(meta_weights)
+
+    if meta_update:
+        outer_grads = query_tape.gradient(meta_batch_loss, model.trainable_variables)
+        outer_optimizer.apply_gradients(zip(outer_grads, model.trainable_variables))
+
+    return meta_batch_loss, np.mean(task_acc)
+```
+
+​					
+
+## 四、MAML存在的问题与本代码的问题
+
+MAML本身存在一些问题被发表在[How to train your MAML](https://arxiv.org/abs/1810.09502)中。而本代码在训练时也存在过拟合的问题，即训练初期，validation loss是有下降，但训练到后期，该validation loss逐步升高。而在调节了两个lr之后，该情况也不见好转。
+
